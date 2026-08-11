@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>yt-dlp Command Generator</title>
+  <link rel="stylesheet" href="styles.css" data-build-inline="style" />
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header id="app-header">
+  <div class="header-inner">
+    <div class="header-brand">
+      <div class="brand-icon">
+        <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="4 17 10 11 4 5"/>
+          <line x1="12" y1="19" x2="20" y2="19"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-title">yt-dlp Generator</span>
+        <span class="brand-tagline">Generate ready-to-use yt-dlp commands</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn-icon" id="lang-btn" title="Switch language" aria-label="Switch language">
+        <span id="lang-icon"></span>
+      </button>
+      <button type="button" class="btn-icon" id="theme-btn" title="Toggle dark mode" aria-label="Toggle dark mode">
+        <span id="theme-icon"></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ===== MAIN ===== -->
+<main id="app-main">
+
+  <!-- 1. URL INPUT -->
+  <section id="url-section" class="card">
+    <label for="url-input" class="section-label">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="#ff0000">
+        <path d="M21.8 8S21.6 6.6 21 6c-.7-.7-1.5-.7-1.9-.8C16.8 5 12 5 12 5s-4.8 0-7.1.2c-.4.1-1.2.1-1.9.8-.6.6-.8 2-.8 2S2 9.6 2 11.2v1.5c0 1.6.2 3.2.2 3.2s.2 1.4.8 2c.7.7 1.7.7 2.1.8C6.4 19 12 19 12 19s4.8 0 7.1-.3c.4-.1 1.2-.1 1.9-.8.6-.6.8-2 .8-2s.2-1.6.2-3.2v-1.5C22 9.6 21.8 8 21.8 8zM9.7 14.5V9.3l5.4 2.6-5.4 2.6z"/>
+      </svg>
+      YouTube URL
+    </label>
+    <div class="input-wrapper">
+      <div class="input-icon-left">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+        </svg>
+      </div>
+      <input
+        type="url"
+        id="url-input"
+        class="input-field input-with-icons"
+        placeholder="https://music.youtube.com/watch?v=..."
+        autocomplete="off"
+        spellcheck="false"
+        aria-label="YouTube URL"
+        aria-describedby="url-validation-msg url-meta"
+      />
+      <button type="button" class="btn-icon input-icon-right" id="clear-url-btn" title="Clear URL" aria-label="Clear URL" style="display:none">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div id="url-validation-msg" class="validation-msg" role="alert"></div>
+    <div id="url-meta" class="url-meta" aria-live="polite"></div>
+  </section>
+
+  <!-- 2. QUICK PRESETS -->
+  <section id="presets-section" aria-label="Quick presets">
+    <button type="button" class="preset-btn" data-preset="best-video" aria-label="Best Video preset" aria-pressed="false">
+      <span class="preset-icon">▶</span>
+      <span class="preset-label">Best Video</span>
+      <span class="preset-desc">Best quality, auto format</span>
+    </button>
+    <button type="button" class="preset-btn" data-preset="hd-mp4" aria-label="1080p MP4 preset" aria-pressed="false">
+      <span class="preset-icon">🎬</span>
+      <span class="preset-label">1080p MP4</span>
+      <span class="preset-desc">Full HD, high compatibility</span>
+    </button>
+    <button type="button" class="preset-btn" data-preset="audio-mp3" aria-label="Audio MP3 preset" aria-pressed="false">
+      <span class="preset-icon">🎵</span>
+      <span class="preset-label">Audio MP3</span>
+      <span class="preset-desc">Extract audio, best quality</span>
+    </button>
+    <button type="button" class="preset-btn" data-preset="youtube-music-audio" aria-label="YouTube Music Audio preset" aria-pressed="false">
+      <span class="preset-icon">🎧</span>
+      <span class="preset-label">YouTube Music Audio</span>
+      <span class="preset-desc">Audio for music.youtube.com</span>
+    </button>
+    <button type="button" class="preset-btn" data-preset="playlist" aria-label="Playlist preset" aria-pressed="false">
+      <span class="preset-icon">📋</span>
+      <span class="preset-label">Playlist</span>
+      <span class="preset-desc">Download entire playlist</span>
+    </button>
+  </section>
+
+  <!-- 3. OPTIONS GRID -->
+  <div id="options-grid">
+
+    <!-- 3a. VIDEO FORMAT -->
+    <div class="card" id="format-card">
+      <div class="section-label" id="video-format-label">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+        </svg>
+        Video Format
+      </div>
+      <div class="radio-group" id="video-format-group" role="radiogroup" aria-labelledby="video-format-label">
+        <label class="radio-option selected">
+          <input type="radio" name="videoFormat" value="best" checked />
+          <span class="radio-label">Best quality</span>
+          <span class="radio-desc">Auto</span>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="videoFormat" value="mp4" />
+          <span class="radio-label">MP4 only</span>
+          <span class="radio-desc">ext=mp4</span>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="videoFormat" value="webm" />
+          <span class="radio-label">WebM only</span>
+          <span class="radio-desc">ext=webm</span>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="videoFormat" value="audio-only" />
+          <span class="radio-label">Audio only</span>
+          <span class="radio-desc">-x flag</span>
+        </label>
+      </div>
+
+      <div class="resolution-section form-group" id="resolution-section">
+        <label for="resolution-select">Resolution</label>
+        <select class="select-field" id="resolution-select">
+          <option value="best">Best available</option>
+          <option value="2160">4K (2160p)</option>
+          <option value="1440">2K (1440p)</option>
+          <option value="1080">1080p</option>
+          <option value="720">720p</option>
+          <option value="480">480p</option>
+          <option value="360">360p</option>
+          <option value="worst">Lowest (saves quota)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 3b. AUDIO FORMAT -->
+    <div class="card" id="audio-card">
+      <div class="section-label" id="audio-format-section-label">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+        </svg>
+        Audio Format
+      </div>
+
+      <div class="form-group" style="margin-top:0">
+        <label id="audio-format-group-label">Audio Format</label>
+        <div class="radio-group" id="audio-format-group" role="radiogroup" aria-labelledby="audio-format-group-label">
+          <label class="radio-option">
+            <input type="radio" name="audioFormat" value="m4a" checked />
+            <span class="radio-label">M4A</span>
+            <span class="radio-desc">Default</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="audioFormat" value="mp3" />
+            <span class="radio-label">MP3</span>
+            <span class="radio-desc">Popular</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="audioFormat" value="opus" />
+            <span class="radio-label">Opus</span>
+            <span class="radio-desc">Efficient</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="audioFormat" value="wav" />
+            <span class="radio-label">WAV</span>
+            <span class="radio-desc">Lossless</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="audio-quality-slider">Audio Quality</label>
+        <div class="slider-wrap">
+          <div class="slider-labels">
+            <span>0 (Best)</span>
+            <span>9 (Smallest)</span>
+          </div>
+          <input type="range" id="audio-quality-slider" min="0" max="9" value="0" aria-describedby="audio-quality-label" />
+          <div class="slider-value" id="audio-quality-label">Quality: 0 (Best)</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <button type="button" class="toggle-wrap" id="audio-only-toggle" role="switch" aria-checked="false" aria-label="Extract audio only">
+          <span class="toggle-track" id="audio-only-track" aria-hidden="true">
+            <span class="toggle-thumb"></span>
+          </span>
+          <span class="toggle-label">Extract audio only</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. ADVANCED OPTIONS (collapsible) -->
+  <div class="card" id="advanced-card">
+    <div class="collapsible-header" id="advanced-toggle"
+         aria-expanded="false" aria-controls="advanced-body"
+         role="button" tabindex="0">
+      <span class="section-label" id="advanced-toggle-label" style="margin-bottom:0">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/>
+        </svg>
+        Advanced Options
+      </span>
+      <svg class="collapsible-icon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    </div>
+    <div class="collapsible-body" id="advanced-body" role="region" aria-labelledby="advanced-toggle-label" aria-hidden="true" inert>
+      <div class="collapsible-content">
+
+        <!-- Subtitles -->
+        <div class="advanced-section">
+          <div class="advanced-section-title">Subtitles</div>
+          <div class="checkbox-group">
+            <label class="checkbox-item" for="cb-write-subs">
+              <input type="checkbox" id="cb-write-subs" />
+              <span class="checkbox-label">Download subtitles</span>
+              <span class="checkbox-code">--write-subs</span>
+            </label>
+            <label class="checkbox-item" for="cb-auto-subs">
+              <input type="checkbox" id="cb-auto-subs" />
+              <span class="checkbox-label">Auto-generated subs</span>
+              <span class="checkbox-code">--write-auto-subs</span>
+            </label>
+            <label class="checkbox-item" for="cb-embed-subs">
+              <input type="checkbox" id="cb-embed-subs" />
+              <span class="checkbox-label">Embed subtitles</span>
+              <span class="checkbox-code">--embed-subs</span>
+            </label>
+          </div>
+          <div class="form-group">
+            <label for="sub-langs-input">Subtitle Languages</label>
+            <input type="text" id="sub-langs-input" class="input-field" value="en,id" placeholder="en,id" aria-label="Subtitle languages" />
+          </div>
+        </div>
+
+        <!-- Thumbnail -->
+        <div class="advanced-section">
+          <div class="advanced-section-title">Thumbnail</div>
+          <div class="checkbox-group">
+            <label class="checkbox-item" for="cb-write-thumb">
+              <input type="checkbox" id="cb-write-thumb" />
+              <span class="checkbox-label">Download thumbnail</span>
+              <span class="checkbox-code">--write-thumbnail</span>
+            </label>
+            <label class="checkbox-item" for="cb-embed-thumb">
+              <input type="checkbox" id="cb-embed-thumb" />
+              <span class="checkbox-label">Embed thumbnail</span>
+              <span class="checkbox-code">--embed-thumbnail</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Extras -->
+        <div class="advanced-section">
+          <div class="advanced-section-title">Extras</div>
+          <div class="checkbox-group">
+            <label class="checkbox-item" for="cb-metadata">
+              <input type="checkbox" id="cb-metadata" />
+              <span class="checkbox-label">Add metadata</span>
+              <span class="checkbox-code">--add-metadata</span>
+            </label>
+            <label class="checkbox-item" for="cb-sponsorblock">
+              <input type="checkbox" id="cb-sponsorblock" />
+              <span class="checkbox-label">SponsorBlock</span>
+              <span class="checkbox-code">--sponsorblock-remove all</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Playlist -->
+        <div class="advanced-section">
+          <div class="advanced-section-title">Playlist</div>
+          <div class="checkbox-group">
+            <label class="checkbox-item" for="cb-playlist">
+              <input type="checkbox" id="cb-playlist" />
+              <span class="checkbox-label">Download Playlist</span>
+              <span class="checkbox-code">--yes-playlist</span>
+            </label>
+          </div>
+          <div id="playlist-range-section" class="form-group hidden">
+            <label id="playlist-range-label">Playlist range (optional)</label>
+            <div class="range-inputs">
+              <div>
+                <label for="playlist-start" style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">Start</label>
+                <input type="number" id="playlist-start" class="input-field" placeholder="1" min="1" aria-label="Playlist start" />
+              </div>
+              <div>
+                <label for="playlist-end" style="font-size:12px;color:var(--text-secondary);display:block;margin-bottom:4px;">End</label>
+                <input type="number" id="playlist-end" class="input-field" placeholder="10" min="1" aria-label="Playlist end" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Network -->
+        <div class="advanced-section">
+          <div class="advanced-section-title">Network</div>
+          <div class="form-group" style="margin-top:0">
+            <label for="rate-limit-input">Rate Limit</label>
+            <input type="text" id="rate-limit-input" class="input-field" placeholder="e.g. 2M, 500K (leave blank for unlimited)" />
+          </div>
+          <div class="form-group">
+            <label for="cookies-browser-select">Cookies from Browser</label>
+            <select id="cookies-browser-select" class="select-field">
+              <option value="">Do not use cookies</option>
+              <option value="chrome">Chrome</option>
+              <option value="firefox">Firefox</option>
+              <option value="edge">Edge</option>
+              <option value="safari">Safari</option>
+            </select>
+          </div>
+          <div class="checkbox-group">
+            <label class="checkbox-item" for="cb-cookies-file">
+              <input type="checkbox" id="cb-cookies-file" />
+              <span class="checkbox-label">Cookies from cookie.txt file</span>
+              <span class="checkbox-code">--cookies</span>
+            </label>
+          </div>
+          <div class="form-group" style="margin-top:8px">
+            <label for="cookies-file-input">Path cookie.txt</label>
+            <input type="text" id="cookies-file-input" class="input-field" value="cookie.txt" />
+          </div>
+        </div>
+
+        <!-- Output Template -->
+        <div class="advanced-section">
+          <div class="advanced-section-title">Output Template</div>
+          <div class="form-group" style="margin-top:0">
+            <label for="output-template-input">Filename Template</label>
+            <input type="text" id="output-template-input" class="input-field" value="%(title)s.%(ext)s" />
+          </div>
+          <div class="template-chips" role="group" aria-label="Template presets">
+            <button type="button" class="chip" data-template="%(title)s.%(ext)s">%(title)s.%(ext)s</button>
+            <button type="button" class="chip" data-template="%(uploader)s - %(title)s.%(ext)s">%(uploader)s - %(title)s</button>
+            <button type="button" class="chip" data-template="%(playlist_index)s - %(title)s.%(ext)s">%(playlist_index)s - %(title)s</button>
+          </div>
+        </div>
+
+        <!-- OS Format -->
+        <div class="advanced-section">
+          <div class="advanced-section-title">OS Format</div>
+          <div class="pill-group" role="group" aria-label="OS command format">
+            <button type="button" class="pill active" data-os="unix" aria-pressed="true">Unix/macOS</button>
+            <button type="button" class="pill" data-os="windows-cmd" aria-pressed="false">Windows CMD</button>
+            <button type="button" class="pill" data-os="powershell" aria-pressed="false">PowerShell</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. COMMAND OUTPUT -->
+  <div class="card" id="output-card">
+    <div class="output-header">
+      <h2>Generated Command</h2>
+      <div class="output-actions">
+        <span id="os-badge" class="badge badge-os">Unix</span>
+        <button type="button" class="btn-ghost" id="format-toggle-btn" aria-label="Toggle multiline format" aria-pressed="true">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+          </svg>
+          Multiline
+        </button>
+        <button type="button" class="btn-success" id="copy-btn" aria-label="Copy command to clipboard">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="2" width="6" height="4" rx="1"/><path d="M17 4h2a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h2"/><path d="M9 12h6M9 16h4"/>
+          </svg>
+          Copy Command
+        </button>
+      </div>
+    </div>
+    <pre id="command-output" class="code-block" aria-label="Generated yt-dlp command" aria-live="polite"><code id="command-code"></code></pre>
+    <p id="command-hint" class="text-sm text-secondary">
+      Paste the command above into your terminal. Make sure <code style="font-family:var(--font-mono);background:var(--bg-input);padding:1px 6px;border-radius:4px;font-size:12px;">yt-dlp</code> is installed on your system.
+    </p>
+  </div>
+
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer id="app-footer">
+  <div class="footer-inner">
+    <div class="footer-main">
+      <div class="footer-copy">
+        <span id="footer-copy-main">© 2025 yt-dlp Command Generator — This tool only generates CLI commands.</span><br>
+        <span id="footer-install-note">Make sure yt-dlp is installed on your system.</span>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/yt-dlp/yt-dlp" class="footer-link" target="_blank" rel="noopener noreferrer">yt-dlp GitHub</a>
+        <a href="https://github.com/yt-dlp/yt-dlp#usage-and-options" id="footer-docs-link" class="footer-link" target="_blank" rel="noopener noreferrer">Documentation</a>
+        <a href="https://github.com/yt-dlp/yt-dlp/wiki/Installation" id="footer-install-link" class="footer-link" target="_blank" rel="noopener noreferrer">Installation</a>
+      </div>
+    </div>
+    <div class="footer-warning" id="footer-warning">
+      Respect copyright. This tool is not responsible for use that violates YouTube Terms of Service or applicable law.
+    </div>
+  </div>
+</footer>
+
+<!-- ===== TOAST CONTAINER ===== -->
+<div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+<script src="app.js" data-build-inline="script"></script>
+</body>
+</html>

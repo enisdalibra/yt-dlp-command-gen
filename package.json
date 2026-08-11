@@ -1,0 +1,13 @@
+{
+  "name": "yt-dlp-command-generator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Offline-first yt-dlp command generator.",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "npm run build && node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
