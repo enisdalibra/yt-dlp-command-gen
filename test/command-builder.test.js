@@ -243,6 +243,20 @@ test('isSafeWindowsCmdInput rejects double quotes and other cmd metacharacters',
   })), false);
 });
 
+test('preset reset keys cover every option a preset can set', () => {
+  const { PRESETS, PRESET_RESET_KEYS } = loadCommandBuilder();
+
+  const used = new Set(Object.values(PRESETS).flatMap(preset => Object.keys(preset)));
+  assert.ok(used.size > 0);
+  for (const key of used) {
+    assert.ok(PRESET_RESET_KEYS.includes(key), `preset key not covered by reset: ${key}`);
+  }
+  // Advanced options that presets must clear even when they never set them.
+  for (const key of ['writeSubs', 'sponsorBlock', 'rateLimit', 'cookiesBrowser']) {
+    assert.ok(PRESET_RESET_KEYS.includes(key), `advanced option must be reset by presets: ${key}`);
+  }
+});
+
 test('validateUrl treats watch URLs with list parameter as playlists', () => {
   const { validateUrl } = loadCommandBuilder();
 

@@ -38,6 +38,25 @@ const PRESETS = {
   },
 };
 
+// Every command-affecting option a preset owns. Applying a preset resets
+// all of these to their defaults first, so leftover advanced options
+// (SponsorBlock, cookies, subtitles, ...) can never silently leak into a
+// preset's generated command. UI/session preferences (lang, url, os,
+// multiline) are intentionally excluded.
+const PRESET_RESET_KEYS = [
+  ...new Set(Object.values(PRESETS).flatMap(preset => Object.keys(preset))),
+  'writeSubs',
+  'writeAutoSubs',
+  'embedSubs',
+  'subLangs',
+  'writeThumbnail',
+  'sponsorBlock',
+  'rateLimit',
+  'cookiesFileEnabled',
+  'cookiesBrowser',
+  'cookiesFilePath',
+];
+
 // ============================================================
 // === STORAGE VALIDATION ===
 // ============================================================
@@ -452,5 +471,6 @@ if (typeof module !== 'undefined' && module.exports) {
     formatCommand,
     syntaxHighlight,
     escapeHtml,
+    PRESET_RESET_KEYS,
   };
 }

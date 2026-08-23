@@ -968,19 +968,12 @@ function initEventHandlers() {
       const preset = PRESETS[presetId];
       if (!preset) return;
 
-      // Reset relevant options
-      state.videoFormat     = DEFAULT_STATE.videoFormat;
-      state.resolution      = DEFAULT_STATE.resolution;
-      state.audioOnly       = DEFAULT_STATE.audioOnly;
-      state.audioFormat     = DEFAULT_STATE.audioFormat;
-      state.audioQuality    = DEFAULT_STATE.audioQuality;
-      state.mergeFormat     = DEFAULT_STATE.mergeFormat;
-      state.embedThumbnail  = DEFAULT_STATE.embedThumbnail;
-      state.addMetadata     = DEFAULT_STATE.addMetadata;
-      state.downloadPlaylist= DEFAULT_STATE.downloadPlaylist;
-      state.playlistStart   = DEFAULT_STATE.playlistStart;
-      state.playlistEnd     = DEFAULT_STATE.playlistEnd;
-      state.outputTemplate  = DEFAULT_STATE.outputTemplate;
+      // Reset every command-affecting option to its default so leftover
+      // advanced options (SponsorBlock, cookies, subtitles, ...) can never
+      // leak into the preset's generated command.
+      PRESET_RESET_KEYS.forEach(key => {
+        state[key] = DEFAULT_STATE[key];
+      });
 
       Object.assign(state, preset);
       state.activePreset = presetId;
