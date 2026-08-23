@@ -53,15 +53,15 @@ test('buildFormatString uses modern default and resolution selectors', () => {
   assert.equal(buildFormatString(baseOptions()), 'bv*+ba[ext=m4a]/b');
   assert.equal(
     buildFormatString(baseOptions({ resolution: '1080' })),
-    'bv*[height<=1080]+ba[ext=m4a]/b[height<=1080]',
+    'bv*[height<=1080]+ba[ext=m4a]/b[height<=1080]/b',
   );
   assert.equal(
     buildFormatString(baseOptions({ videoFormat: 'mp4', resolution: '1080' })),
-    'bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[height<=1080][ext=mp4]',
+    'bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[height<=1080][ext=mp4]/b',
   );
   assert.equal(
     buildFormatString(baseOptions({ videoFormat: 'webm', resolution: '720' })),
-    'bv*[height<=720][ext=webm]+ba[ext=opus]/b[height<=720][ext=webm]',
+    'bv*[height<=720][ext=webm]+ba[ext=webm]/b[height<=720][ext=webm]/b',
   );
   assert.equal(buildFormatString(baseOptions({ resolution: 'worst' })), 'bv*+ba[ext=m4a]/b');
 });
@@ -106,7 +106,7 @@ test('buildCommand handles MP4, WebM, and lowest video modes', () => {
   }).slice(0, 6), [
     'yt-dlp',
     '-f',
-    'bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[height<=1080][ext=mp4]',
+    'bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[height<=1080][ext=mp4]/b',
     '--merge-output-format',
     'mp4',
     '--no-playlist',
@@ -117,7 +117,7 @@ test('buildCommand handles MP4, WebM, and lowest video modes', () => {
   }).slice(0, 4), [
     'yt-dlp',
     '-f',
-    'bv*[height<=720][ext=webm]+ba[ext=opus]/b[height<=720][ext=webm]',
+    'bv*[height<=720][ext=webm]+ba[ext=webm]/b[height<=720][ext=webm]/b',
     '--no-playlist',
   ]);
 

@@ -256,11 +256,18 @@ function buildFormatString(options) {
   const videoExtFilter = videoFormat === 'mp4' ? '[ext=mp4]' : videoFormat === 'webm' ? '[ext=webm]' : '';
   // Prefer m4a audio so merges stay MP4-compatible (avc/aac). Without this,
   // "best" picks opus/webm and the merged output silently becomes MKV,
-  // which also blocks --embed-thumbnail for MP4.
-  const audioExtFilter = videoFormat === 'webm' ? '[ext=opus]' : '[ext=m4a]';
+  // which also blocks --embed-thumbnail for MP4. WebM mode must filter audio
+  // by container too: YouTube serves opus audio as ext=webm, so [ext=opus]
+  // never matches and the whole selector fails.
+  const audioExtFilter = videoFormat === 'webm' ? '[ext=webm]' : '[ext=m4a]';
   const fallbackFilter = `${heightFilter}${videoExtFilter}`;
 
-  return `bv*${heightFilter}${videoExtFilter}+ba${audioExtFilter}/b${fallbackFilter}`;
+  const chain = `bv*${heightFilter}${videoExtFilter}+ba${audioExtFilter}/b${fallbackFilter}`;
+  // Terminal /b keeps the chain from dead-ending ("Requested format is not
+  // available") when a video has no formats matching the filters at all.
+  // Only needed when the fallback branch is itself filtered; a bare b is
+  // already the unfiltered last resort.
+  return fallbackFilter ? `${chain}/b` : chain;
 }
 
 function buildCommand(state) {
