@@ -1,40 +1,9 @@
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
-const vm = require('node:vm');
 
 function loadCommandBuilder() {
-  const appPath = path.join(__dirname, '..', 'src', 'app.js');
-  const app = fs.readFileSync(appPath, 'utf8');
-  const start = app.indexOf('// === PRESETS ===');
-  const end = app.indexOf('// === UI UPDATER ===');
-
-  assert.notEqual(start, -1, 'Cannot find command-builder source start marker');
-  assert.notEqual(end, -1, 'Cannot find command-builder source end marker');
-
-  const source = app.slice(start, end);
-  const context = {
-    URL,
-    currentLang: () => 'id',
-  };
-
-  vm.runInNewContext(`${source}
-globalThis.commandBuilder = {
-  buildFormatString,
-  buildCommand,
-  renderCommandParts,
-  formatCommand,
-  shellQuote,
-  validateUrl,
-  parseStoredOptions,
-  serializeOptionsForStorage,
-  sanitizeStoredUrl,
-  isSafeWindowsCmdInput,
-};
-`, context);
-
-  return context.commandBuilder;
+  return require(path.join(__dirname, '..', 'src', 'command-builder.js'));
 }
 
 function baseOptions(overrides = {}) {
