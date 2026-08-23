@@ -217,6 +217,7 @@
       font-size: 13px; margin-top: 8px; min-height: 20px;
       color: var(--color-danger); transition: var(--transition-fast);
     }
+    .output-warning { margin-top: -4px; }
     .url-meta { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
     .badge {
       display: inline-flex; align-items: center; gap: 4px;
@@ -867,6 +868,7 @@
       </div>
     </div>
     <pre id="command-output" class="code-block" aria-label="Generated yt-dlp command" aria-live="polite"><code id="command-code"></code></pre>
+    <p id="cmd-safety-warning" class="validation-msg output-warning" role="alert" hidden></p>
     <p id="command-hint" class="text-sm text-secondary">
       Paste the command above into your terminal. Make sure <code style="font-family:var(--font-mono);background:var(--bg-input);padding:1px 6px;border-radius:4px;font-size:12px;">yt-dlp</code> is installed on your system.
     </p>
@@ -1954,11 +1956,20 @@ function updateUI() {
   const fmtBtn = document.getElementById('format-toggle-btn');
   fmtBtn.setAttribute('aria-pressed', String(state.multiline));
 
-  // Never copy a placeholder or malformed URL as an executable command.
+  // The copy button stays clickable so the click handler can explain WHY a
+  // command cannot be copied instead of being a silently dead control.
   const copyBtn = document.getElementById('copy-btn');
-  copyBtn.disabled = !canCopyCommand();
-  copyBtn.setAttribute('aria-disabled', String(!canCopyCommand()));
   copyBtn.setAttribute('aria-label', t.toast.copyButtonLabel);
+
+  // Inline safety warning for windows-cmd output whose user-controlled
+  // values contain characters cmd.exe would parse as syntax (% " newline).
+  // The command stays visible for inspection but must not be pasted.
+  const cmdUnsafe = state.os === 'windows-cmd' && !isSafeWindowsCmdInput(state);
+  const warnEl = document.getElementById('cmd-safety-warning');
+  if (warnEl) {
+    warnEl.hidden = !cmdUnsafe;
+    if (cmdUnsafe) warnEl.textContent = t.toast.unsafeWindowsCmd;
+  }
 
   // Resolution section visibility
   const resSection = document.getElementById('resolution-section');
@@ -2541,9 +2552,9 @@ function initEventHandlers() {
   copyBtn.addEventListener('click', async () => {
     const t = I18N[currentLang()];
     if (!canCopyCommand()) {
-      const message = state.os === 'windows-cmd'
-        ? t.toast.unsafeWindowsCmd
-        : t.toast.enterValidUrl;
+      const t = I18N[currentLang()];
+      const urlValid = validateUrl(state.url || '').valid;
+      const message = urlValid ? t.toast.unsafeWindowsCmd : t.toast.enterValidUrl;
       showToast(message, 'error');
       return;
     }

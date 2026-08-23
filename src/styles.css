@@ -210,6 +210,7 @@ select:focus-visible,
   font-size: 13px; margin-top: 8px; min-height: 20px;
   color: var(--color-danger); transition: var(--transition-fast);
 }
+.output-warning { margin-top: -4px; }
 .url-meta { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
 .badge {
   display: inline-flex; align-items: center; gap: 4px;

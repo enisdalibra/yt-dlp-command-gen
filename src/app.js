@@ -576,11 +576,20 @@ function updateUI() {
   const fmtBtn = document.getElementById('format-toggle-btn');
   fmtBtn.setAttribute('aria-pressed', String(state.multiline));
 
-  // Never copy a placeholder or malformed URL as an executable command.
+  // The copy button stays clickable so the click handler can explain WHY a
+  // command cannot be copied instead of being a silently dead control.
   const copyBtn = document.getElementById('copy-btn');
-  copyBtn.disabled = !canCopyCommand();
-  copyBtn.setAttribute('aria-disabled', String(!canCopyCommand()));
   copyBtn.setAttribute('aria-label', t.toast.copyButtonLabel);
+
+  // Inline safety warning for windows-cmd output whose user-controlled
+  // values contain characters cmd.exe would parse as syntax (% " newline).
+  // The command stays visible for inspection but must not be pasted.
+  const cmdUnsafe = state.os === 'windows-cmd' && !isSafeWindowsCmdInput(state);
+  const warnEl = document.getElementById('cmd-safety-warning');
+  if (warnEl) {
+    warnEl.hidden = !cmdUnsafe;
+    if (cmdUnsafe) warnEl.textContent = t.toast.unsafeWindowsCmd;
+  }
 
   // Resolution section visibility
   const resSection = document.getElementById('resolution-section');
@@ -1163,9 +1172,9 @@ function initEventHandlers() {
   copyBtn.addEventListener('click', async () => {
     const t = I18N[currentLang()];
     if (!canCopyCommand()) {
-      const message = state.os === 'windows-cmd'
-        ? t.toast.unsafeWindowsCmd
-        : t.toast.enterValidUrl;
+      const t = I18N[currentLang()];
+      const urlValid = validateUrl(state.url || '').valid;
+      const message = urlValid ? t.toast.unsafeWindowsCmd : t.toast.enterValidUrl;
       showToast(message, 'error');
       return;
     }
