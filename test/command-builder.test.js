@@ -30,6 +30,7 @@ globalThis.commandBuilder = {
   parseStoredOptions,
   serializeOptionsForStorage,
   sanitizeStoredUrl,
+  isSafeWindowsCmdInput,
 };
 `, context);
 
@@ -80,10 +81,10 @@ function assertPlainEqual(actual, expected) {
 test('buildFormatString uses modern default and resolution selectors', () => {
   const { buildFormatString } = loadCommandBuilder();
 
-  assert.equal(buildFormatString(baseOptions()), 'bv*+ba/b');
+  assert.equal(buildFormatString(baseOptions()), 'bv*+ba[ext=m4a]/b');
   assert.equal(
     buildFormatString(baseOptions({ resolution: '1080' })),
-    'bv*[height<=1080]+ba/b[height<=1080]',
+    'bv*[height<=1080]+ba[ext=m4a]/b[height<=1080]',
   );
   assert.equal(
     buildFormatString(baseOptions({ videoFormat: 'mp4', resolution: '1080' })),
@@ -93,14 +94,14 @@ test('buildFormatString uses modern default and resolution selectors', () => {
     buildFormatString(baseOptions({ videoFormat: 'webm', resolution: '720' })),
     'bv*[height<=720][ext=webm]+ba[ext=opus]/b[height<=720][ext=webm]',
   );
-  assert.equal(buildFormatString(baseOptions({ resolution: 'worst' })), 'bv*+ba/b');
+  assert.equal(buildFormatString(baseOptions({ resolution: 'worst' })), 'bv*+ba[ext=m4a]/b');
 });
 
 test('buildCommand generates explicit playlist behavior and output template', () => {
   assertPlainEqual(commandParts(), [
     'yt-dlp',
     '-f',
-    'bv*+ba/b',
+    'bv*+ba[ext=m4a]/b',
     '--no-playlist',
     '-o',
     '%(title)s.%(ext)s',
@@ -118,7 +119,7 @@ test('buildCommand generates explicit playlist behavior and output template', ()
   }), [
     'yt-dlp',
     '-f',
-    'bv*+ba/b',
+    'bv*+ba[ext=m4a]/b',
     '--yes-playlist',
     '-o',
     '%(playlist_index)s - %(title)s.%(ext)s',
@@ -156,7 +157,7 @@ test('buildCommand handles MP4, WebM, and lowest video modes', () => {
   }).slice(0, 6), [
     'yt-dlp',
     '-f',
-    'bv*+ba/b',
+    'bv*+ba[ext=m4a]/b',
     '-S',
     '+size,+br,+res,+fps',
     '--no-playlist',
@@ -234,6 +235,43 @@ test('renderCommandParts quotes user-controlled values for each shell', () => {
     formatCommand(renderCommandParts(parts, 'powershell'), 'powershell', false),
     "yt-dlp -f 'bv*+ba/b' -o '%(title)s ''quoted''.%(ext)s' 'https://youtube.com/watch?v=AAAAAAAAAAA&list=PLbbbbbbbb'",
   );
+
+  assert.equal(
+    formatCommand(renderCommandParts(parts, 'windows-cmd'), 'windows-cmd', false),
+    'yt-dlp -f "bv*+ba/b" -o "%(title)s \'quoted\'.%(ext)s" "https://youtube.com/watch?v=AAAAAAAAAAA&list=PLbbbbbbbb"',
+  );
+});
+
+test('renderCommandParts never caret-escapes metacharacters inside CMD double quotes', () => {
+  const { renderCommandParts } = loadCommandBuilder();
+  const rendered = renderCommandParts(
+    ['yt-dlp', '-f', 'bv*[height<=1080]+ba[ext=m4a]/b[height<=1080]'],
+    'windows-cmd',
+  );
+
+  // Inside cmd.exe double quotes ^ is literal, so escaping < > & | ^
+  // corrupts the argument yt-dlp receives.
+  assert.equal(rendered[2], '"bv*[height<=1080]+ba[ext=m4a]/b[height<=1080]"');
+});
+
+test('isSafeWindowsCmdInput rejects double quotes and other cmd metacharacters', () => {
+  const { isSafeWindowsCmdInput } = loadCommandBuilder();
+
+  assert.equal(isSafeWindowsCmdInput(baseOptions({
+    url: 'https://youtube.com/watch?v=AAAAAAAAAAA',
+    outputTemplate: 'x" & calc & echo ".%(ext)s',
+  })), false);
+
+  assert.equal(isSafeWindowsCmdInput(baseOptions({
+    url: 'https://youtube.com/watch?v=AAAAAAAAAAA',
+    outputTemplate: '%(title)s.%(ext)s',
+    subLangs: 'en,id',
+  })), true);
+
+  assert.equal(isSafeWindowsCmdInput(baseOptions({
+    url: 'https://youtube.com/watch?v=AAAAAAAAAAA',
+    outputTemplate: '100% done.%(ext)s',
+  })), false);
 });
 
 test('validateUrl treats watch URLs with list parameter as playlists', () => {

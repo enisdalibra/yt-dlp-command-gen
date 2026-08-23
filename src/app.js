@@ -784,12 +784,15 @@ function validateUrl(url) {
 function buildFormatString(options) {
   const { videoFormat, resolution } = options;
   if (resolution === 'worst') {
-    return 'bv*+ba/b';
+    return 'bv*+ba[ext=m4a]/b';
   }
 
   const heightFilter = resolution && resolution !== 'best' ? `[height<=${resolution}]` : '';
   const videoExtFilter = videoFormat === 'mp4' ? '[ext=mp4]' : videoFormat === 'webm' ? '[ext=webm]' : '';
-  const audioExtFilter = videoFormat === 'mp4' ? '[ext=m4a]' : videoFormat === 'webm' ? '[ext=opus]' : '';
+  // Prefer m4a audio so merges stay MP4-compatible (avc/aac). Without this,
+  // "best" picks opus/webm and the merged output silently becomes MKV,
+  // which also blocks --embed-thumbnail for MP4.
+  const audioExtFilter = videoFormat === 'webm' ? '[ext=opus]' : '[ext=m4a]';
   const fallbackFilter = `${heightFilter}${videoExtFilter}`;
 
   return `bv*${heightFilter}${videoExtFilter}+ba${audioExtFilter}/b${fallbackFilter}`;
@@ -869,9 +872,11 @@ function shellQuote(value, os) {
     return `'${arg.replace(/'/g, "''")}'`;
   }
   if (os === 'windows-cmd') {
-    // CMD metacharacters are escaped inside a quoted argument. Percent
-    // expansion is handled separately by validating user-controlled values.
-    return `"${arg.replace(/(["^&|<>])/g, '^$1').replace(/\r?\n/g, '')}"`;
+    // cmd.exe treats ^ & | < > literally inside double quotes, so they must
+    // NOT be caret-escaped here; escaping corrupts the argument yt-dlp
+    // receives (e.g. "height^<=1080"). Newlines cannot survive a single
+    // quoted argument and are stripped.
+    return `"${arg.replace(/\r?\n/g, '')}"`;
   }
   // POSIX shells: apostrophes are represented by closing and reopening the
   // single-quoted string around an escaped apostrophe.
@@ -895,13 +900,15 @@ function renderCommandParts(parts, os) {
 }
 
 function isSafeWindowsCmdInput(options) {
-  // CMD expands %NAME% before yt-dlp receives the argument. Allow normal
-  // percent-encoded URL bytes and yt-dlp's %(field)s output placeholders, but
-  // reject any remaining percent/newline from user-controlled fields.
+  // CMD expands %NAME% before yt-dlp receives the argument, and a double
+  // quote closes the quoted region so trailing text is parsed as cmd syntax.
+  // Allow normal percent-encoded URL bytes and yt-dlp's %(field)s output
+  // placeholders, but reject any remaining percent/quote/newline from
+  // user-controlled fields.
   const url = String(options.url || '').replace(/%[0-9a-fA-F]{2}/g, '');
   const template = String(options.outputTemplate || '').replace(/%\([A-Za-z0-9_.-]+\)[0-9.]*[A-Za-z]/g, '');
   const fields = [url, template, options.subLangs, options.rateLimit, options.cookiesBrowser, options.cookiesFilePath];
-  return fields.every(value => !/[%\r\n]/.test(String(value || '')));
+  return fields.every(value => !/[%"\r\n]/.test(String(value || '')));
 }
 
 function canCopyCommand() {
