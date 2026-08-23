@@ -28,7 +28,6 @@ const DEFAULT_STATE = {
   addMetadata: false,
   sponsorBlock: false,
   downloadPlaylist: false,
-  playlistAutoDetected: false,
   playlistStart: null,
   playlistEnd: null,
   mergeFormat: null,
@@ -161,6 +160,7 @@ const I18N = {
       dismissLabel: 'Tutup notifikasi',
       unsafeWindowsCmd: 'Command ini mengandung karakter yang tidak aman untuk Windows CMD.',
       enterValidUrl: 'Masukkan URL YouTube yang valid terlebih dahulu.',
+      playlistSuggested: 'URL ini juga berisi playlist. Centang "Unduh playlist" jika ingin mengunduh semuanya.',
     },
 
     footer: {
@@ -285,6 +285,7 @@ const I18N = {
       dismissLabel: 'Dismiss notification',
       unsafeWindowsCmd: 'This command contains characters unsafe for Windows CMD.',
       enterValidUrl: 'Enter a valid YouTube URL first.',
+      playlistSuggested: 'This URL also contains a playlist. Tick "Download playlist" to grab everything.',
     },
 
     footer: {
@@ -753,13 +754,6 @@ function syncUIFromState() {
   if (state.url) {
     const vr = validateUrl(state.url, currentLang());
     showUrlMeta(vr.type);
-    if (vr.valid && vr.type === 'playlist' && !state.downloadPlaylist) {
-      state.downloadPlaylist = true;
-      state.playlistAutoDetected = true;
-    } else if (vr.valid && vr.type !== 'playlist' && state.playlistAutoDetected) {
-      state.downloadPlaylist = false;
-      state.playlistAutoDetected = false;
-    }
   }
 
   // Video format radios
@@ -935,23 +929,14 @@ function initEventHandlers() {
       if (vr.valid) {
         urlInput.classList.remove('error');
         msgEl.textContent = '';
+        const prevType = state.urlType;
         state.urlType = vr.type;
         showUrlMeta(vr.type);
-        // Auto-check playlist and clear an earlier auto-detection when the
-        // user changes back to a regular video URL.
-        if (vr.type === 'playlist') {
-          state.downloadPlaylist = true;
-          state.playlistAutoDetected = true;
-          setCheckbox('cb-playlist', true);
-          // Open advanced section
-          const header = document.getElementById('advanced-toggle');
-          if (header.getAttribute('aria-expanded') === 'false') {
-            toggleCollapsible();
-          }
-        } else if (state.playlistAutoDetected) {
-          state.downloadPlaylist = false;
-          state.playlistAutoDetected = false;
-          setCheckbox('cb-playlist', false);
+        // A watch URL that also carries a list id is *suggested* as a
+        // playlist (badge + one-time toast), never forced: the user stays
+        // in control of the "download playlist" checkbox.
+        if (vr.type === 'playlist' && prevType !== 'playlist' && !state.downloadPlaylist) {
+          showToast(I18N[currentLang()].toast.playlistSuggested, 'info');
         }
       } else {
         urlInput.classList.add('error');
@@ -968,11 +953,6 @@ function initEventHandlers() {
     urlInput.value = '';
     state.url = '';
     state.urlType = null;
-    if (state.playlistAutoDetected) {
-      state.downloadPlaylist = false;
-      state.playlistAutoDetected = false;
-      setCheckbox('cb-playlist', false);
-    }
     toggleClearBtn('');
     document.getElementById('url-validation-msg').textContent = '';
     urlInput.classList.remove('error');
@@ -998,7 +978,6 @@ function initEventHandlers() {
       state.embedThumbnail  = DEFAULT_STATE.embedThumbnail;
       state.addMetadata     = DEFAULT_STATE.addMetadata;
       state.downloadPlaylist= DEFAULT_STATE.downloadPlaylist;
-      state.playlistAutoDetected = DEFAULT_STATE.playlistAutoDetected;
       state.playlistStart   = DEFAULT_STATE.playlistStart;
       state.playlistEnd     = DEFAULT_STATE.playlistEnd;
       state.outputTemplate  = DEFAULT_STATE.outputTemplate;
@@ -1089,7 +1068,6 @@ function initEventHandlers() {
     }],
     ['cb-playlist',    () => {
       state.downloadPlaylist = el.checked;
-      state.playlistAutoDetected = false;
       updateUI();
     }],
   ].forEach(([id, handler]) => {

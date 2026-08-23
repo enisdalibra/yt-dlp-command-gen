@@ -253,6 +253,18 @@ test('validateUrl treats watch URLs with list parameter as playlists', () => {
   assert.equal(validateUrl('not-a-youtube-url').valid, false);
 });
 
+test('validateUrl accepts URLs with surrounding whitespace', () => {
+  const { validateUrl } = loadCommandBuilder();
+
+  const trimmed = validateUrl('https://youtube.com/watch?v=AAAAAAAAAAA');
+  assert.equal(
+    validateUrl('  https://youtube.com/watch?v=AAAAAAAAAAA  \n').type,
+    trimmed.type,
+  );
+  assert.equal(validateUrl(' https://youtu.be/AAAAAAAAAAA ').valid, true);
+  assert.equal(validateUrl('\thttps://youtube.com/playlist?list=PLaaaaaaaaaaaaaaaa\n').type, 'playlist');
+});
+
 test('parseStoredOptions accepts versioned storage and rejects invalid values', () => {
   const { parseStoredOptions } = loadCommandBuilder();
   const raw = JSON.stringify({

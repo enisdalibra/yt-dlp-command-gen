@@ -58,7 +58,6 @@ const STORAGE_OPTION_KEYS = [
   'addMetadata',
   'sponsorBlock',
   'downloadPlaylist',
-  'playlistAutoDetected',
   'playlistStart',
   'playlistEnd',
   'mergeFormat',
@@ -93,7 +92,6 @@ const STORAGE_BOOLEAN_KEYS = [
   'addMetadata',
   'sponsorBlock',
   'downloadPlaylist',
-  'playlistAutoDetected',
   'cookiesFileEnabled',
   'multiline',
 ];
@@ -219,15 +217,18 @@ const URL_PATTERNS = {
 };
 
 function validateUrl(url, lang = 'id') {
-  if (!url.trim()) return { valid: false, type: null, message: '' };
+  // Pasted URLs commonly carry trailing spaces/newlines; validate the
+  // trimmed value so those never fail an otherwise valid URL.
+  const candidate = String(url || '').trim();
+  if (!candidate) return { valid: false, type: null, message: '' };
   for (const [type, pattern] of Object.entries(URL_PATTERNS)) {
-    if (pattern.test(url)) {
+    if (pattern.test(candidate)) {
       // A watch URL can also point at a playlist. Treat it as a playlist so
       // the explicit playlist option is generated instead of silently being
       // left to yt-dlp's default behavior.
       if (['video', 'short', 'shortUrl', 'music'].includes(type)) {
         try {
-          if (new URL(url).searchParams.has('list')) {
+          if (new URL(candidate).searchParams.has('list')) {
             return { valid: true, type: 'playlist', message: '' };
           }
         } catch (e) {}
