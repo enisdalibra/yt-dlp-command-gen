@@ -145,6 +145,26 @@ function clampPlaylistIndex(value) {
   return numeric;
 }
 
+// Free-text rate limit for --limit-rate. yt-dlp accepts a byte count with
+// an optional K/M/G suffix (case-insensitive), e.g. "500K", "2M", "4.2M".
+const RATE_LIMIT_PATTERN = /^\d+(?:\.\d+)?[KMG]?$/i;
+
+// Matches any yt-dlp output-template field that belongs to the playlist
+// namespace, e.g. %(playlist_index)s, %(playlist_autonumber)01d s.
+const PLAYLIST_FIELD_PATTERN = /%\([^)]*playlist[^)]*\)/;
+
+function validateRateLimit(value, lang = 'id') {
+  const candidate = String(value || '').trim();
+  if (!candidate) return { valid: true, message: '' };
+  if (RATE_LIMIT_PATTERN.test(candidate)) return { valid: true, message: '' };
+  return {
+    valid: false,
+    message: lang === 'en'
+      ? 'Rate limit not recognized. Use bytes or a K/M/G suffix, e.g. 500K, 2M.'
+      : 'Rate limit tidak dikenali. Gunakan angka byte atau suffix K/M/G, misal: 500K, 2M.',
+  };
+}
+
 function sanitizeStoredOptions(candidate) {
   if (!isPlainObject(candidate)) return {};
 
@@ -171,6 +191,12 @@ function sanitizeStoredOptions(candidate) {
 
     if (key === 'playlistStart' || key === 'playlistEnd') {
       next[key] = clampPlaylistIndex(value);
+      continue;
+    }
+
+    if (key === 'rateLimit') {
+      const str = clampString(value, '', STORAGE_STRING_LIMITS[key]);
+      next[key] = validateRateLimit(str).valid ? str : '';
       continue;
     }
 
@@ -321,7 +347,11 @@ function buildCommand(state) {
   }
 
   if (options.writeThumbnail) parts.push('--write-thumbnail');
-  if (options.embedThumbnail) parts.push('--embed-thumbnail');
+  // WAV containers cannot hold embedded cover art; yt-dlp's EmbedThumbnail
+  // post-processor hard-fails the whole run after downloading, so the flag
+  // is dropped instead of generating a command doomed to fail.
+  const embedThumbnailPossible = !(options.audioOnly && options.audioFormat === 'wav');
+  if (options.embedThumbnail && embedThumbnailPossible) parts.push('--embed-thumbnail');
   if (options.addMetadata)    parts.push('--add-metadata');
   if (options.sponsorBlock)   parts.push('--sponsorblock-remove', 'all');
 
@@ -329,11 +359,17 @@ function buildCommand(state) {
   // contain both a video id and a playlist id.
   parts.push(options.downloadPlaylist ? '--yes-playlist' : '--no-playlist');
 
-  const tpl = options.outputTemplate || '%(title)s.%(ext)s';
+  let tpl = options.outputTemplate || '%(title)s.%(ext)s';
+  // Playlist fields resolve to "NA" on single-video downloads. Fall back to
+  // the default template so files are never named "NA - Title.ext".
+  if (!options.downloadPlaylist && PLAYLIST_FIELD_PATTERN.test(tpl)) {
+    tpl = '%(title)s.%(ext)s';
+  }
   parts.push('-o', tpl);
 
-  if (options.rateLimit && options.rateLimit.trim()) {
-    parts.push('--limit-rate', options.rateLimit.trim());
+  const rate = String(options.rateLimit || '').trim();
+  if (rate && validateRateLimit(rate).valid) {
+    parts.push('--limit-rate', rate);
   }
   // cookies dari browser dan cookies dari file harus saling eksklusif
   if (options.cookiesBrowser && !options.cookiesFileEnabled) {
@@ -463,6 +499,8 @@ if (typeof module !== 'undefined' && module.exports) {
     sanitizeStoredUrl,
     URL_PATTERNS,
     validateUrl,
+    validateRateLimit,
+    RATE_LIMIT_PATTERN,
     buildFormatString,
     buildCommand,
     shellQuote,

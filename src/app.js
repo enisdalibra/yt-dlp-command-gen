@@ -129,6 +129,8 @@ const I18N = {
 
     rateLimitLabel: 'Rate limit',
     rateLimitPlaceholder: 'misal: 2M, 500K (kosongkan untuk tanpa limit)',
+    rateLimitInvalid: 'Rate limit tidak dikenali. Gunakan angka byte atau suffix K/M/G, misal: 500K, 2M.',
+    embedThumbnailWav: '--embed-thumbnail tidak didukung untuk audio WAV. Pilih format audio lain atau gunakan "Download thumbnail".',
     cookiesBrowserLabel: 'Cookies dari Browser',
     noCookiesOption: 'Tidak menggunakan cookies',
     cookiesFilePathLabel: 'Path cookie.txt',
@@ -254,6 +256,8 @@ const I18N = {
 
     rateLimitLabel: 'Rate limit',
     rateLimitPlaceholder: 'e.g. 2M, 500K (leave blank for unlimited)',
+    rateLimitInvalid: 'Rate limit not recognized. Use bytes or a K/M/G suffix, e.g. 500K, 2M.',
+    embedThumbnailWav: '--embed-thumbnail is not supported for WAV audio. Pick another audio format or use "Download thumbnail" instead.',
     cookiesBrowserLabel: 'Cookies from Browser',
     noCookiesOption: 'Do not use cookies',
     cookiesFilePathLabel: 'Path to cookie.txt',
@@ -589,6 +593,32 @@ function updateUI() {
   if (warnEl) {
     warnEl.hidden = !cmdUnsafe;
     if (cmdUnsafe) warnEl.textContent = t.toast.unsafeWindowsCmd;
+  }
+
+  // Free-text rate limit: show an inline error for values yt-dlp would
+  // reject; the builder already omits --limit-rate for them.
+  const rateInput = document.getElementById('rate-limit-input');
+  const rateMsg = document.getElementById('rate-limit-validation-msg');
+  if (rateInput && rateMsg) {
+    const vr = validateRateLimit(state.rateLimit || '', currentLang());
+    rateInput.classList.toggle('error', !vr.valid);
+    rateMsg.textContent = vr.valid ? '' : vr.message;
+  }
+
+  // Embedding cover art is impossible in WAV containers, so the checkbox is
+  // disabled and any stale checked state is explained instead of silently
+  // dropped from the generated command.
+  const embedThumbBlocked = state.audioOnly && state.audioFormat === 'wav';
+  const embedThumbCb = document.getElementById('cb-embed-thumb');
+  if (embedThumbCb) {
+    embedThumbCb.disabled = embedThumbBlocked;
+    embedThumbCb.setAttribute('aria-disabled', String(embedThumbBlocked));
+  }
+  const embedWarn = document.getElementById('embed-thumb-warning');
+  if (embedWarn) {
+    const showEmbedWarn = embedThumbBlocked && !!state.embedThumbnail;
+    embedWarn.hidden = !showEmbedWarn;
+    if (showEmbedWarn) embedWarn.textContent = t.embedThumbnailWav;
   }
 
   // Resolution section visibility

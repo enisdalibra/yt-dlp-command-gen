@@ -745,6 +745,7 @@
               <span class="checkbox-code">--embed-thumbnail</span>
             </label>
           </div>
+          <p id="embed-thumb-warning" class="validation-msg output-warning" role="alert" hidden></p>
         </div>
 
         <!-- Extras -->
@@ -795,6 +796,7 @@
           <div class="form-group" style="margin-top:0">
             <label for="rate-limit-input">Rate Limit</label>
             <input type="text" id="rate-limit-input" class="input-field" placeholder="e.g. 2M, 500K (leave blank for unlimited)" />
+            <p id="rate-limit-validation-msg" class="validation-msg" role="alert"></p>
           </div>
           <div class="form-group">
             <label for="cookies-browser-select">Cookies from Browser</label>
@@ -1047,6 +1049,26 @@ function clampPlaylistIndex(value) {
   return numeric;
 }
 
+// Free-text rate limit for --limit-rate. yt-dlp accepts a byte count with
+// an optional K/M/G suffix (case-insensitive), e.g. "500K", "2M", "4.2M".
+const RATE_LIMIT_PATTERN = /^\d+(?:\.\d+)?[KMG]?$/i;
+
+// Matches any yt-dlp output-template field that belongs to the playlist
+// namespace, e.g. %(playlist_index)s, %(playlist_autonumber)01d s.
+const PLAYLIST_FIELD_PATTERN = /%\([^)]*playlist[^)]*\)/;
+
+function validateRateLimit(value, lang = 'id') {
+  const candidate = String(value || '').trim();
+  if (!candidate) return { valid: true, message: '' };
+  if (RATE_LIMIT_PATTERN.test(candidate)) return { valid: true, message: '' };
+  return {
+    valid: false,
+    message: lang === 'en'
+      ? 'Rate limit not recognized. Use bytes or a K/M/G suffix, e.g. 500K, 2M.'
+      : 'Rate limit tidak dikenali. Gunakan angka byte atau suffix K/M/G, misal: 500K, 2M.',
+  };
+}
+
 function sanitizeStoredOptions(candidate) {
   if (!isPlainObject(candidate)) return {};
 
@@ -1073,6 +1095,12 @@ function sanitizeStoredOptions(candidate) {
 
     if (key === 'playlistStart' || key === 'playlistEnd') {
       next[key] = clampPlaylistIndex(value);
+      continue;
+    }
+
+    if (key === 'rateLimit') {
+      const str = clampString(value, '', STORAGE_STRING_LIMITS[key]);
+      next[key] = validateRateLimit(str).valid ? str : '';
       continue;
     }
 
@@ -1223,7 +1251,11 @@ function buildCommand(state) {
   }
 
   if (options.writeThumbnail) parts.push('--write-thumbnail');
-  if (options.embedThumbnail) parts.push('--embed-thumbnail');
+  // WAV containers cannot hold embedded cover art; yt-dlp's EmbedThumbnail
+  // post-processor hard-fails the whole run after downloading, so the flag
+  // is dropped instead of generating a command doomed to fail.
+  const embedThumbnailPossible = !(options.audioOnly && options.audioFormat === 'wav');
+  if (options.embedThumbnail && embedThumbnailPossible) parts.push('--embed-thumbnail');
   if (options.addMetadata)    parts.push('--add-metadata');
   if (options.sponsorBlock)   parts.push('--sponsorblock-remove', 'all');
 
@@ -1231,11 +1263,17 @@ function buildCommand(state) {
   // contain both a video id and a playlist id.
   parts.push(options.downloadPlaylist ? '--yes-playlist' : '--no-playlist');
 
-  const tpl = options.outputTemplate || '%(title)s.%(ext)s';
+  let tpl = options.outputTemplate || '%(title)s.%(ext)s';
+  // Playlist fields resolve to "NA" on single-video downloads. Fall back to
+  // the default template so files are never named "NA - Title.ext".
+  if (!options.downloadPlaylist && PLAYLIST_FIELD_PATTERN.test(tpl)) {
+    tpl = '%(title)s.%(ext)s';
+  }
   parts.push('-o', tpl);
 
-  if (options.rateLimit && options.rateLimit.trim()) {
-    parts.push('--limit-rate', options.rateLimit.trim());
+  const rate = String(options.rateLimit || '').trim();
+  if (rate && validateRateLimit(rate).valid) {
+    parts.push('--limit-rate', rate);
   }
   // cookies dari browser dan cookies dari file harus saling eksklusif
   if (options.cookiesBrowser && !options.cookiesFileEnabled) {
@@ -1365,6 +1403,8 @@ if (typeof module !== 'undefined' && module.exports) {
     sanitizeStoredUrl,
     URL_PATTERNS,
     validateUrl,
+    validateRateLimit,
+    RATE_LIMIT_PATTERN,
     buildFormatString,
     buildCommand,
     shellQuote,
@@ -1509,6 +1549,8 @@ const I18N = {
 
     rateLimitLabel: 'Rate limit',
     rateLimitPlaceholder: 'misal: 2M, 500K (kosongkan untuk tanpa limit)',
+    rateLimitInvalid: 'Rate limit tidak dikenali. Gunakan angka byte atau suffix K/M/G, misal: 500K, 2M.',
+    embedThumbnailWav: '--embed-thumbnail tidak didukung untuk audio WAV. Pilih format audio lain atau gunakan "Download thumbnail".',
     cookiesBrowserLabel: 'Cookies dari Browser',
     noCookiesOption: 'Tidak menggunakan cookies',
     cookiesFilePathLabel: 'Path cookie.txt',
@@ -1634,6 +1676,8 @@ const I18N = {
 
     rateLimitLabel: 'Rate limit',
     rateLimitPlaceholder: 'e.g. 2M, 500K (leave blank for unlimited)',
+    rateLimitInvalid: 'Rate limit not recognized. Use bytes or a K/M/G suffix, e.g. 500K, 2M.',
+    embedThumbnailWav: '--embed-thumbnail is not supported for WAV audio. Pick another audio format or use "Download thumbnail" instead.',
     cookiesBrowserLabel: 'Cookies from Browser',
     noCookiesOption: 'Do not use cookies',
     cookiesFilePathLabel: 'Path to cookie.txt',
@@ -1969,6 +2013,32 @@ function updateUI() {
   if (warnEl) {
     warnEl.hidden = !cmdUnsafe;
     if (cmdUnsafe) warnEl.textContent = t.toast.unsafeWindowsCmd;
+  }
+
+  // Free-text rate limit: show an inline error for values yt-dlp would
+  // reject; the builder already omits --limit-rate for them.
+  const rateInput = document.getElementById('rate-limit-input');
+  const rateMsg = document.getElementById('rate-limit-validation-msg');
+  if (rateInput && rateMsg) {
+    const vr = validateRateLimit(state.rateLimit || '', currentLang());
+    rateInput.classList.toggle('error', !vr.valid);
+    rateMsg.textContent = vr.valid ? '' : vr.message;
+  }
+
+  // Embedding cover art is impossible in WAV containers, so the checkbox is
+  // disabled and any stale checked state is explained instead of silently
+  // dropped from the generated command.
+  const embedThumbBlocked = state.audioOnly && state.audioFormat === 'wav';
+  const embedThumbCb = document.getElementById('cb-embed-thumb');
+  if (embedThumbCb) {
+    embedThumbCb.disabled = embedThumbBlocked;
+    embedThumbCb.setAttribute('aria-disabled', String(embedThumbBlocked));
+  }
+  const embedWarn = document.getElementById('embed-thumb-warning');
+  if (embedWarn) {
+    const showEmbedWarn = embedThumbBlocked && !!state.embedThumbnail;
+    embedWarn.hidden = !showEmbedWarn;
+    if (showEmbedWarn) embedWarn.textContent = t.embedThumbnailWav;
   }
 
   // Resolution section visibility

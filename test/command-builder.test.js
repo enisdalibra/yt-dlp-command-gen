@@ -361,3 +361,97 @@ test('sanitizeStoredUrl only restores recognized YouTube URLs', () => {
   assert.equal(sanitizeStoredUrl('javascript:alert(1)'), '');
   assert.equal(sanitizeStoredUrl('https://example.com/watch?v=AAAAAAAAAAA'), '');
 });
+
+test('validateRateLimit accepts yt-dlp size suffixes and rejects garbage', () => {
+  const { validateRateLimit } = loadCommandBuilder();
+
+  for (const value of ['', '   ', '500', '500K', '2M', '4.2M', '1g', '350k']) {
+    assert.equal(validateRateLimit(value).valid, true, `expected valid: ${value}`);
+  }
+  for (const value of ['abc', '2 MB', '2MB/s', '-1M', '1.2.3M', '5T', '2 M']) {
+    assert.equal(validateRateLimit(value).valid, false, `expected invalid: ${value}`);
+  }
+
+  assert.equal(validateRateLimit('abc').message.length > 0, true);
+  assert.equal(validateRateLimit('abc', 'en').message.length > 0, true);
+});
+
+test('buildCommand omits --limit-rate for invalid rate limit input', () => {
+  const invalid = commandParts({ options: { rateLimit: 'banana' } });
+  assert.equal(invalid.includes('--limit-rate'), false);
+
+  const valid = commandParts({ options: { rateLimit: ' 2M ' } });
+  assert.deepEqual(valid.slice(
+    valid.indexOf('--limit-rate'),
+    valid.indexOf('--limit-rate') + 2,
+  ), ['--limit-rate', '2M']);
+});
+
+test('parseStoredOptions rejects rate limit values with invalid format', () => {
+  const { parseStoredOptions } = loadCommandBuilder();
+  const raw = JSON.stringify({
+    version: 1,
+    options: { rateLimit: 'not-a-rate' },
+  });
+
+  assertPlainEqual(parseStoredOptions(raw), { rateLimit: '', mergeFormat: null });
+
+  const good = JSON.stringify({
+    version: 1,
+    options: { rateLimit: '500K' },
+  });
+  assertPlainEqual(parseStoredOptions(good), { rateLimit: '500K', mergeFormat: null });
+});
+
+test('buildCommand drops --embed-thumbnail when converting audio-only to wav', () => {
+  const parts = commandParts({
+    options: { audioOnly: true, audioFormat: 'wav', embedThumbnail: true },
+  });
+
+  assert.equal(parts.includes('-x'), true);
+  assert.equal(parts.includes('--embed-thumbnail'), false);
+
+  // Non-wav audio keeps embedding.
+  const mp3 = commandParts({
+    options: { audioOnly: true, audioFormat: 'mp3', embedThumbnail: true },
+  });
+  assert.equal(mp3.includes('--embed-thumbnail'), true);
+
+  // Video downloads keep embedding even if audioFormat is wav from an
+  // earlier audio-only session.
+  const video = commandParts({
+    options: { audioFormat: 'wav', embedThumbnail: true },
+  });
+  assert.equal(video.includes('--embed-thumbnail'), true);
+});
+
+test('buildCommand falls back to default template when not downloading a playlist', () => {
+  const single = commandParts({
+    options: {
+      downloadPlaylist: false,
+      outputTemplate: '%(playlist_index)s - %(title)s.%(ext)s',
+    },
+  });
+  const oIndex = single.indexOf('-o');
+  assert.equal(single[oIndex + 1], '%(title)s.%(ext)s');
+
+  // Playlist downloads keep the playlist-aware template.
+  const playlist = commandParts({
+    url: 'https://youtube.com/playlist?list=PLaaaaaaaaaaaaaaaa',
+    options: {
+      downloadPlaylist: true,
+      outputTemplate: '%(playlist_autonumber)s - %(title)s.%(ext)s',
+    },
+  });
+  const plIndex = playlist.indexOf('-o');
+  assert.equal(playlist[plIndex + 1], '%(playlist_autonumber)s - %(title)s.%(ext)s');
+
+  // Templates without playlist fields are untouched either way.
+  const plainSingle = commandParts({
+    options: {
+      downloadPlaylist: false,
+      outputTemplate: '%(uploader)s - %(title)s.%(ext)s',
+    },
+  });
+  assert.equal(plainSingle[plainSingle.indexOf('-o') + 1], '%(uploader)s - %(title)s.%(ext)s');
+});
