@@ -357,24 +357,29 @@
           </div>
         </div>
 
-        <!-- OS Format -->
-        <div class="advanced-section">
-          <div class="advanced-section-title">OS Format</div>
-          <div class="pill-group" role="group" aria-label="OS command format">
-            <button type="button" class="pill active" data-os="unix" aria-pressed="true">Unix/macOS</button>
-            <button type="button" class="pill" data-os="windows-cmd" aria-pressed="false">Windows CMD</button>
-            <button type="button" class="pill" data-os="powershell" aria-pressed="false">PowerShell</button>
-          </div>
-          <div class="checkbox-group" id="global-exe-group">
-            <label class="checkbox-item" for="cb-global-exe">
-              <input type="checkbox" id="cb-global-exe" />
-              <span class="checkbox-label">Use global yt-dlp (on PATH)</span>
-              <span class="checkbox-code">yt-dlp</span>
-            </label>
-          </div>
-        </div>
-
       </div>
+    </div>
+  </div>
+
+  <!-- 4b. OS FORMAT (kept outside Advanced: it shapes the generated command) -->
+  <div class="card" id="os-format-card">
+    <div class="section-label" id="os-format-title">
+      <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8M12 18v3"/>
+      </svg>
+      OS Format
+    </div>
+    <div class="pill-group" role="group" aria-label="OS command format">
+      <button type="button" class="pill active" data-os="unix" aria-pressed="true">Unix/macOS</button>
+      <button type="button" class="pill" data-os="windows-cmd" aria-pressed="false">Windows CMD</button>
+      <button type="button" class="pill" data-os="powershell" aria-pressed="false">PowerShell</button>
+    </div>
+    <div class="checkbox-group" id="global-exe-group">
+      <label class="checkbox-item" for="cb-global-exe">
+        <input type="checkbox" id="cb-global-exe" />
+        <span class="checkbox-label">Use global yt-dlp (on PATH)</span>
+        <span class="checkbox-code">yt-dlp</span>
+      </label>
     </div>
   </div>
 

@@ -486,3 +486,24 @@ test('requiresFfmpeg flags options that depend on ffmpeg post-processing', () =>
   const raw = JSON.stringify({ version: 1, options: { useGlobalExe: true } });
   assertPlainEqual(parseStoredOptions(raw), { useGlobalExe: true, mergeFormat: null });
 });
+
+test('detectDefaultOs maps Windows platforms to PowerShell, others to Unix', () => {
+  const { detectDefaultOs } = loadCommandBuilder();
+
+  for (const platform of ['Win32', 'Windows', 'win64']) {
+    assert.equal(detectDefaultOs(platform), 'powershell', `expected powershell: ${platform}`);
+  }
+  for (const platform of ['MacIntel', 'Linux x86_64', '', null, undefined]) {
+    assert.equal(detectDefaultOs(platform), 'unix', `expected unix: ${platform}`);
+  }
+});
+
+test('detectDefaultLang recognizes Indonesian browser locales', () => {
+  const { detectDefaultLang } = loadCommandBuilder();
+
+  assert.equal(detectDefaultLang('id'), 'id');
+  assert.equal(detectDefaultLang('id-ID'), 'id');
+  assert.equal(detectDefaultLang('en-US'), 'en');
+  assert.equal(detectDefaultLang('de-DE'), 'en');
+  assert.equal(detectDefaultLang(''), 'en');
+});

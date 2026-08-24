@@ -466,8 +466,7 @@ function applyLanguage(lang = currentLang()) {
   setAdvancedTitle('cb-playlist', t.playlistTitle);
   setAdvancedTitle('rate-limit-input', t.networkTitle);
   setAdvancedTitle('output-template-input', t.outputTemplateTitle);
-  const osSectionTitle = document.querySelector('.pill-group[role="group"]')?.closest('.advanced-section')?.querySelector('.advanced-section-title');
-  if (osSectionTitle) osSectionTitle.textContent = t.osFormatTitle;
+  setSvgSectionLabelText('#os-format-title', t.osFormatTitle);
 
   // Checkbox labels
   Object.entries(t.checkbox).forEach(([cbId, text]) => setCheckboxText(cbId, text));
@@ -783,6 +782,22 @@ const STORAGE_KEYS = {
   theme:   'ytdlp-theme',
 };
 
+function getBrowserPlatform() {
+  try {
+    return (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '';
+  } catch(e) {
+    return '';
+  }
+}
+
+function getBrowserLanguage() {
+  try {
+    return (navigator.languages && navigator.languages[0]) || navigator.language || '';
+  } catch(e) {
+    return '';
+  }
+}
+
 function saveOptions() {
   try {
     localStorage.setItem(STORAGE_KEYS.options, serializeOptionsForStorage(state));
@@ -795,8 +810,16 @@ function saveOptions() {
 function loadOptions() {
   try {
     const saved = localStorage.getItem(STORAGE_KEYS.options);
+    const firstRun = !saved;
     if (saved) {
       Object.assign(state, parseStoredOptions(saved));
+    }
+    // First run: guess OS and language from the browser so the generated
+    // command targets the user's actual shell out of the box. Saved
+    // preferences always take precedence over detection.
+    if (firstRun) {
+      state.os = detectDefaultOs(getBrowserPlatform());
+      state.lang = detectDefaultLang(getBrowserLanguage());
     }
     const savedUrl = localStorage.getItem(STORAGE_KEYS.url);
     const safeUrl = sanitizeStoredUrl(savedUrl);

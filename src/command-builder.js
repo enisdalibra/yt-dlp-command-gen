@@ -459,6 +459,19 @@ function requiresFfmpeg(options) {
   );
 }
 
+// First-run defaults from the browser environment. These are only applied
+// when no saved options exist, so an explicit user choice always wins over
+// the detection.
+function detectDefaultOs(platform) {
+  // navigator.platform reports "Win32"/"Windows" on Windows (even 64-bit);
+  // PowerShell is the modern default shell there.
+  return /win/i.test(String(platform || '')) ? 'powershell' : 'unix';
+}
+
+function detectDefaultLang(language) {
+  return /^id/i.test(String(language || '')) ? 'id' : 'en';
+}
+
 function formatCommand(parts, os, multiline) {
   if (!multiline) return parts.join(' ');
   const continuation = os === 'powershell' ? ' `' : os === 'windows-cmd' ? ' ^' : ' \\';
@@ -527,6 +540,8 @@ if (typeof module !== 'undefined' && module.exports) {
     renderCommandParts,
     isSafeWindowsCmdInput,
     requiresFfmpeg,
+    detectDefaultOs,
+    detectDefaultLang,
     formatCommand,
     syntaxHighlight,
     escapeHtml,
