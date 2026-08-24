@@ -13,7 +13,7 @@ const rootOutputPath = path.join(ROOT_DIR, 'index.html');
 const distOutputPath = path.join(DIST_DIR, 'index.html');
 
 function readUtf8(filePath) {
-  return fs.readFileSync(filePath, 'utf8').trimEnd();
+  return fs.readFileSync(filePath, 'utf8').replace(/\r\n?/g, '\n').trimEnd();
 }
 
 function buildHtml() {
