@@ -1172,7 +1172,6 @@ function initEventHandlers() {
   copyBtn.addEventListener('click', async () => {
     const t = I18N[currentLang()];
     if (!canCopyCommand()) {
-      const t = I18N[currentLang()];
       const urlValid = validateUrl(state.url || '').valid;
       const message = urlValid ? t.toast.unsafeWindowsCmd : t.toast.enterValidUrl;
       showToast(message, 'error');
