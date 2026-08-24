@@ -365,6 +365,13 @@
             <button type="button" class="pill" data-os="windows-cmd" aria-pressed="false">Windows CMD</button>
             <button type="button" class="pill" data-os="powershell" aria-pressed="false">PowerShell</button>
           </div>
+          <div class="checkbox-group" id="global-exe-group">
+            <label class="checkbox-item" for="cb-global-exe">
+              <input type="checkbox" id="cb-global-exe" />
+              <span class="checkbox-label">Use global yt-dlp (on PATH)</span>
+              <span class="checkbox-code">yt-dlp</span>
+            </label>
+          </div>
         </div>
 
       </div>
@@ -393,6 +400,8 @@
     </div>
     <pre id="command-output" class="code-block" aria-label="Generated yt-dlp command" aria-live="polite"><code id="command-code"></code></pre>
     <p id="cmd-safety-warning" class="validation-msg output-warning" role="alert" hidden></p>
+    <p id="ffmpeg-hint" class="contextual-hint" role="status" hidden></p>
+    <p id="cookies-tip" class="contextual-hint" role="status" hidden></p>
     <p id="command-hint" class="text-sm text-secondary">
       Paste the command above into your terminal. Make sure <code style="font-family:var(--font-mono);background:var(--bg-input);padding:1px 6px;border-radius:4px;font-size:12px;">yt-dlp</code> is installed on your system.
     </p>

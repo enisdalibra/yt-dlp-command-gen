@@ -85,6 +85,7 @@ const STORAGE_OPTION_KEYS = [
   'cookiesBrowser',
   'cookiesFileEnabled',
   'cookiesFilePath',
+  'useGlobalExe',
   'multiline',
   'os',
   'activePreset',
@@ -112,6 +113,7 @@ const STORAGE_BOOLEAN_KEYS = [
   'sponsorBlock',
   'downloadPlaylist',
   'cookiesFileEnabled',
+  'useGlobalExe',
   'multiline',
 ];
 
@@ -319,7 +321,11 @@ function buildFormatString(options) {
 function buildCommand(state) {
   const { url, options } = state;
   const isWindows = options.os === 'windows-cmd' || options.os === 'powershell';
-  const parts = [isWindows ? '.\\yt-dlp.exe' : 'yt-dlp'];
+  // Windows users with yt-dlp on PATH can opt into the bare command;
+  // everyone else gets the .\ form because cmd/PowerShell don't search the
+  // current directory by default.
+  const exeName = isWindows && !options.useGlobalExe ? '.\\yt-dlp.exe' : 'yt-dlp';
+  const parts = [exeName];
 
   if (options.audioOnly) {
     parts.push('-x');
@@ -439,6 +445,20 @@ function isSafeWindowsCmdInput(options) {
   return fields.every(value => !/[%"\r\n]/.test(String(value || '')));
 }
 
+// True when the generated command relies on ffmpeg post-processing
+// (extraction, merging, or thumbnail/subtitle embedding), so the hint can
+// warn users who don't have it installed.
+function requiresFfmpeg(options) {
+  return !!(
+    options.audioOnly ||
+    options.writeThumbnail ||
+    options.embedThumbnail ||
+    options.embedSubs ||
+    options.videoFormat === 'mp4' ||
+    options.mergeFormat === 'mp4'
+  );
+}
+
 function formatCommand(parts, os, multiline) {
   if (!multiline) return parts.join(' ');
   const continuation = os === 'powershell' ? ' `' : os === 'windows-cmd' ? ' ^' : ' \\';
@@ -506,6 +526,7 @@ if (typeof module !== 'undefined' && module.exports) {
     shellQuote,
     renderCommandParts,
     isSafeWindowsCmdInput,
+    requiresFfmpeg,
     formatCommand,
     syntaxHighlight,
     escapeHtml,

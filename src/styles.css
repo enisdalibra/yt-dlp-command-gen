@@ -211,6 +211,10 @@ select:focus-visible,
   color: var(--color-danger); transition: var(--transition-fast);
 }
 .output-warning { margin-top: -4px; }
+.contextual-hint {
+  font-size: 13px; margin-top: 8px;
+  color: var(--text-secondary); line-height: 1.5;
+}
 .url-meta { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
 .badge {
   display: inline-flex; align-items: center; gap: 4px;

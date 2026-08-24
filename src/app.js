@@ -36,6 +36,7 @@ const DEFAULT_STATE = {
   cookiesBrowser: '',
   cookiesFileEnabled: false,
   cookiesFilePath: 'cookie.txt',
+  useGlobalExe: false,
   multiline: true,
   os: 'unix',
   activePreset: null,
@@ -118,6 +119,7 @@ const I18N = {
       'cb-sponsorblock': 'SponsorBlock',
       'cb-playlist': 'Unduh playlist',
       'cb-cookies-file': 'Cookies dari file cookie.txt',
+      'cb-global-exe': 'Gunakan yt-dlp global (sudah di PATH)',
     },
 
     subtitleLanguagesLabel: 'Bahasa Subtitel',
@@ -134,6 +136,9 @@ const I18N = {
     cookiesBrowserLabel: 'Cookies dari Browser',
     noCookiesOption: 'Tidak menggunakan cookies',
     cookiesFilePathLabel: 'Path cookie.txt',
+
+    ffmpegRequiredHint: 'Opsi yang dipilih membutuhkan <code style="font-family:var(--font-mono);background:var(--bg-input);padding:1px 6px;border-radius:4px;font-size:12px;">ffmpeg</code>. Pastikan sudah terinstall dan tersedia di PATH.',
+    cookies403Tip: 'Dapatkan error <strong>HTTP 403</strong> atau "Sign in to confirm you\'re not a bot"? YouTube memblokir unduhan tanpa cookies. Aktifkan <strong>Cookies dari Browser</strong> atau cookie.txt di bagian Jaringan.',
 
     filenameTemplateLabel: 'Template Nama File',
     templatePresetsLabel: 'Preset template nama file',
@@ -245,6 +250,7 @@ const I18N = {
       'cb-sponsorblock': 'SponsorBlock',
       'cb-playlist': 'Download playlist',
       'cb-cookies-file': 'Cookies from cookie.txt file',
+      'cb-global-exe': 'Use global yt-dlp (on PATH)',
     },
 
     subtitleLanguagesLabel: 'Subtitle Languages',
@@ -261,6 +267,9 @@ const I18N = {
     cookiesBrowserLabel: 'Cookies from Browser',
     noCookiesOption: 'Do not use cookies',
     cookiesFilePathLabel: 'Path to cookie.txt',
+
+    ffmpegRequiredHint: 'The selected options require <code style="font-family:var(--font-mono);background:var(--bg-input);padding:1px 6px;border-radius:4px;font-size:12px;">ffmpeg</code>. Make sure it is installed and available on your PATH.',
+    cookies403Tip: 'Getting <strong>HTTP 403</strong> or "Sign in to confirm you\'re not a bot"? YouTube blocks downloads without cookies. Enable <strong>Cookies from Browser</strong> or cookie.txt in the Network section.',
 
     filenameTemplateLabel: 'Filename Template',
     templatePresetsLabel: 'Filename template presets',
@@ -621,6 +630,25 @@ function updateUI() {
     if (showEmbedWarn) embedWarn.textContent = t.embedThumbnailWav;
   }
 
+  // The global-exe choice only changes the command on Windows shells.
+  const globalExeGroup = document.getElementById('global-exe-group');
+  if (globalExeGroup) globalExeGroup.hidden = state.os === 'unix';
+
+  // Contextual hints below the generated command: ffmpeg requirement and
+  // the cookies/403 bot-detection tip when no cookie source is active.
+  const ffmpegHint = document.getElementById('ffmpeg-hint');
+  if (ffmpegHint) {
+    const needsFfmpeg = requiresFfmpeg(state);
+    ffmpegHint.hidden = !needsFfmpeg;
+    if (needsFfmpeg) ffmpegHint.innerHTML = t.ffmpegRequiredHint;
+  }
+  const cookiesTip = document.getElementById('cookies-tip');
+  if (cookiesTip) {
+    const noCookies = !state.cookiesBrowser && !state.cookiesFileEnabled;
+    cookiesTip.hidden = !noCookies;
+    if (noCookies) cookiesTip.innerHTML = t.cookies403Tip;
+  }
+
   // Resolution section visibility
   const resSection = document.getElementById('resolution-section');
   if (state.audioOnly || state.videoFormat === 'audio-only') {
@@ -830,6 +858,7 @@ function syncUIFromState() {
   setCheckbox('cb-metadata',    state.addMetadata);
   setCheckbox('cb-sponsorblock',state.sponsorBlock);
   setCheckbox('cb-playlist',    state.downloadPlaylist);
+  setCheckbox('cb-global-exe',  state.useGlobalExe);
 
   // Sub langs
   document.getElementById('sub-langs-input').value = state.subLangs || 'en,id';
@@ -1101,6 +1130,9 @@ function initEventHandlers() {
     ['cb-playlist',    () => {
       state.downloadPlaylist = el.checked;
       updateUI();
+    }],
+    ['cb-global-exe',  () => {
+      state.useGlobalExe = el.checked;
     }],
   ].forEach(([id, handler]) => {
     const el = document.getElementById(id);

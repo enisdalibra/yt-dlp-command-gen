@@ -455,3 +455,34 @@ test('buildCommand falls back to default template when not downloading a playlis
   });
   assert.equal(plainSingle[plainSingle.indexOf('-o') + 1], '%(uploader)s - %(title)s.%(ext)s');
 });
+
+test('buildCommand uses the global yt-dlp executable when requested on Windows', () => {
+  // Default stays .\yt-dlp.exe for Windows shells.
+  assert.equal(commandParts({ options: { os: 'windows-cmd' } })[0], '.\\yt-dlp.exe');
+  assert.equal(commandParts({ options: { os: 'powershell' } })[0], '.\\yt-dlp.exe');
+
+  // Opting into a PATH-installed binary switches to the bare command.
+  assert.equal(commandParts({ options: { os: 'windows-cmd', useGlobalExe: true } })[0], 'yt-dlp');
+  assert.equal(commandParts({ options: { os: 'powershell', useGlobalExe: true } })[0], 'yt-dlp');
+
+  // Unix is unaffected either way.
+  assert.equal(commandParts({ options: { os: 'unix', useGlobalExe: false } })[0], 'yt-dlp');
+});
+
+test('requiresFfmpeg flags options that depend on ffmpeg post-processing', () => {
+  const { requiresFfmpeg } = loadCommandBuilder();
+
+  // Plain single-stream download needs no ffmpeg.
+  assert.equal(requiresFfmpeg(baseOptions()), false);
+
+  for (const key of ['audioOnly', 'writeThumbnail', 'embedThumbnail', 'embedSubs']) {
+    assert.equal(requiresFfmpeg(baseOptions({ [key]: true })), true, `expected ffmpeg required: ${key}`);
+  }
+  assert.equal(requiresFfmpeg(baseOptions({ videoFormat: 'mp4', mergeFormat: 'mp4' })), true);
+  assert.equal(requiresFfmpeg(baseOptions({ videoFormat: 'webm', resolution: '720' })), false);
+
+  // Storage round-trip keeps the new option.
+  const { parseStoredOptions } = loadCommandBuilder();
+  const raw = JSON.stringify({ version: 1, options: { useGlobalExe: true } });
+  assertPlainEqual(parseStoredOptions(raw), { useGlobalExe: true, mergeFormat: null });
+});
