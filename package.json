@@ -5,6 +5,7 @@
   "description": "Offline-first yt-dlp command generator.",
   "scripts": {
     "build": "node scripts/build.js",
+    "lint": "node scripts/lint.js",
     "test": "npm run build && node --test"
   },
   "engines": {
