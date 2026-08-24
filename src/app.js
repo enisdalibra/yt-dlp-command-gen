@@ -139,6 +139,7 @@ const I18N = {
 
     ffmpegRequiredHint: 'Opsi yang dipilih membutuhkan <code style="font-family:var(--font-mono);background:var(--bg-input);padding:1px 6px;border-radius:4px;font-size:12px;">ffmpeg</code>. Pastikan sudah terinstall dan tersedia di PATH.',
     cookies403Tip: 'Dapatkan error <strong>HTTP 403</strong> atau "Sign in to confirm you\'re not a bot"? YouTube memblokir unduhan tanpa cookies. Aktifkan <strong>Cookies dari Browser</strong> atau cookie.txt di bagian Jaringan.',
+    emptyState: 'Masukkan URL YouTube yang valid di atas untuk melihat command di sini.',
 
     filenameTemplateLabel: 'Template Nama File',
     templatePresetsLabel: 'Preset template nama file',
@@ -270,6 +271,7 @@ const I18N = {
 
     ffmpegRequiredHint: 'The selected options require <code style="font-family:var(--font-mono);background:var(--bg-input);padding:1px 6px;border-radius:4px;font-size:12px;">ffmpeg</code>. Make sure it is installed and available on your PATH.',
     cookies403Tip: 'Getting <strong>HTTP 403</strong> or "Sign in to confirm you\'re not a bot"? YouTube blocks downloads without cookies. Enable <strong>Cookies from Browser</strong> or cookie.txt in the Network section.',
+    emptyState: 'Enter a valid YouTube URL above to see the command here.',
 
     filenameTemplateLabel: 'Filename Template',
     templatePresetsLabel: 'Filename template presets',
@@ -571,13 +573,37 @@ function canCopyCommand() {
 // ============================================================
 function updateUI() {
   const options = { ...state };
-  const parts = buildCommand({ url: state.url, options });
-  const rawCommand = formatCommand(renderCommandParts(parts, state.os), state.os, state.multiline);
-  const highlighted = syntaxHighlight(parts, state.os, state.multiline);
+  const urlResult = validateUrl(state.url || '');
   const t = I18N[currentLang()];
+  const commandCode = document.getElementById('command-code');
 
-  // Update command display
-  document.getElementById('command-code').innerHTML = highlighted;
+  if (!urlResult.valid) {
+    // Empty state: no fake "yt-dlp ... URL" placeholder — show a friendly
+    // hint instead, and keep the clipboard buffer empty.
+    commandCode.innerHTML = `<span class="cmd-empty">${escapeHtml(t.emptyState)}</span>`;
+    document.getElementById('command-output').dataset.raw = '';
+
+    // The safety warning only makes sense for a real command.
+    const warnEl = document.getElementById('cmd-safety-warning');
+    if (warnEl) warnEl.hidden = true;
+  } else {
+    const parts = buildCommand({ url: state.url, options });
+    const rawCommand = formatCommand(renderCommandParts(parts, state.os), state.os, state.multiline);
+    commandCode.innerHTML = syntaxHighlight(parts, state.os, state.multiline);
+
+    // Store raw command for clipboard
+    document.getElementById('command-output').dataset.raw = rawCommand;
+
+    // Inline safety warning for windows-cmd output whose user-controlled
+    // values contain characters cmd.exe would parse as syntax (% " newline).
+    // The command stays visible for inspection but must not be pasted.
+    const cmdUnsafe = state.os === 'windows-cmd' && !isSafeWindowsCmdInput(state);
+    const warnEl = document.getElementById('cmd-safety-warning');
+    if (warnEl) {
+      warnEl.hidden = !cmdUnsafe;
+      if (cmdUnsafe) warnEl.textContent = t.toast.unsafeWindowsCmd;
+    }
+  }
 
   // OS badge
   const osBadge = document.getElementById('os-badge');
@@ -592,16 +618,6 @@ function updateUI() {
   // command cannot be copied instead of being a silently dead control.
   const copyBtn = document.getElementById('copy-btn');
   copyBtn.setAttribute('aria-label', t.toast.copyButtonLabel);
-
-  // Inline safety warning for windows-cmd output whose user-controlled
-  // values contain characters cmd.exe would parse as syntax (% " newline).
-  // The command stays visible for inspection but must not be pasted.
-  const cmdUnsafe = state.os === 'windows-cmd' && !isSafeWindowsCmdInput(state);
-  const warnEl = document.getElementById('cmd-safety-warning');
-  if (warnEl) {
-    warnEl.hidden = !cmdUnsafe;
-    if (cmdUnsafe) warnEl.textContent = t.toast.unsafeWindowsCmd;
-  }
 
   // Free-text rate limit: show an inline error for values yt-dlp would
   // reject; the builder already omits --limit-rate for them.
@@ -693,9 +709,6 @@ function updateUI() {
 
   // Save to localStorage
   saveOptions();
-
-  // Store raw command for clipboard
-  document.getElementById('command-output').dataset.raw = rawCommand;
 }
 
 function updateRadioStyles(groupId) {

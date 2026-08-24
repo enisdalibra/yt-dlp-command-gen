@@ -97,6 +97,8 @@
       transition: var(--transition-normal);
       padding: 10px 20px;
       white-space: nowrap;
+      /* Comfortable touch target (WCAG 2.5.5 / platform guidance). */
+      min-height: 44px;
     }
     button:active { transform: scale(0.97); }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -116,6 +118,9 @@
     .btn-ghost:hover { background: var(--border-default); }
     .btn-icon {
       padding: 8px;
+      min-width: 44px;
+      min-height: 44px;
+      justify-content: center;
       background: var(--bg-input);
       color: var(--text-secondary);
       border-radius: var(--radius-full);
@@ -233,6 +238,11 @@
     .badge.badge-playlist{ background: rgba(88, 228, 158, 0.12); color: #2d8f5e; border-color: rgba(88, 228, 158, 0.4); }
     .badge.badge-short   { background: rgba(228, 88, 88, 0.1); color: var(--color-danger); border-color: rgba(228, 88, 88, 0.3); }
     .badge.badge-os      { background: var(--bg-input); color: var(--text-secondary); }
+    /* Dark mode: the light-theme accent colors fall below 4.5:1 on dark cards,
+       so badges switch to lighter text variants that keep their hue identity. */
+    [data-theme="dark"] .badge.badge-video   { background: rgba(157, 142, 245, 0.16); color: #b7acff; border-color: rgba(157, 142, 245, 0.45); }
+    [data-theme="dark"] .badge.badge-playlist{ background: rgba(88, 228, 158, 0.14); color: #7de8ae; border-color: rgba(88, 228, 158, 0.35); }
+    [data-theme="dark"] .badge.badge-short   { background: rgba(242, 163, 163, 0.14); color: #f2a3a3; border-color: rgba(242, 163, 163, 0.35); }
     
     /* ===== PRESETS ===== */
     #presets-section {
@@ -265,6 +275,7 @@
     .radio-option {
       display: flex; align-items: center; gap: 10px;
       padding: 10px 14px; border-radius: var(--radius-md);
+      min-height: 44px;
       border: 1.5px solid var(--border-default);
       cursor: pointer; transition: var(--transition-fast);
       background: var(--bg-input);
@@ -325,6 +336,7 @@
     .checkbox-item {
       display: flex; align-items: center; gap: 10px;
       padding: 10px 14px; border-radius: var(--radius-md);
+      min-height: 44px;
       border: 1.5px solid var(--border-default);
       cursor: pointer; transition: var(--transition-fast);
       background: var(--bg-input);
@@ -406,6 +418,7 @@
     .code-block .cmd-value  { color: #a6e3a1; }
     .code-block .cmd-url    { color: #f9e2af; }
     .code-block .cmd-escape { color: #cba6f7; }
+    .code-block .cmd-empty  { color: #8b90a0; font-family: var(--font-sans); }
     
     /* ===== TOAST ===== */
     #toast-container {
@@ -471,6 +484,16 @@
       #app-main { padding: 20px 14px; gap: 16px; }
       .card { padding: 18px; }
       .code-block { font-size: 12px; padding: 16px; }
+    }
+    
+    /* ===== REDUCED MOTION ===== */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      html { scroll-behavior: auto !important; }
     }
     
     /* ===== DIVIDER ===== */
@@ -551,7 +574,7 @@
       </button>
     </div>
     <div id="url-validation-msg" class="validation-msg" role="alert"></div>
-    <div id="url-meta" class="url-meta" aria-live="polite"></div>
+    <div id="url-meta" class="url-meta"></div>
   </section>
 
   <!-- 2. QUICK PRESETS -->
@@ -885,7 +908,7 @@
         </button>
       </div>
     </div>
-    <pre id="command-output" class="code-block" aria-label="Generated yt-dlp command" aria-live="polite"><code id="command-code"></code></pre>
+    <pre id="command-output" class="code-block" aria-label="Generated yt-dlp command"><code id="command-code"></code></pre>
     <p id="cmd-safety-warning" class="validation-msg output-warning" role="alert" hidden></p>
     <p id="ffmpeg-hint" class="contextual-hint" role="status" hidden></p>
     <p id="cookies-tip" class="contextual-hint" role="status" hidden></p>
@@ -1613,6 +1636,7 @@ const I18N = {
 
     ffmpegRequiredHint: 'Opsi yang dipilih membutuhkan <code style="font-family:var(--font-mono);background:var(--bg-input);padding:1px 6px;border-radius:4px;font-size:12px;">ffmpeg</code>. Pastikan sudah terinstall dan tersedia di PATH.',
     cookies403Tip: 'Dapatkan error <strong>HTTP 403</strong> atau "Sign in to confirm you\'re not a bot"? YouTube memblokir unduhan tanpa cookies. Aktifkan <strong>Cookies dari Browser</strong> atau cookie.txt di bagian Jaringan.',
+    emptyState: 'Masukkan URL YouTube yang valid di atas untuk melihat command di sini.',
 
     filenameTemplateLabel: 'Template Nama File',
     templatePresetsLabel: 'Preset template nama file',
@@ -1744,6 +1768,7 @@ const I18N = {
 
     ffmpegRequiredHint: 'The selected options require <code style="font-family:var(--font-mono);background:var(--bg-input);padding:1px 6px;border-radius:4px;font-size:12px;">ffmpeg</code>. Make sure it is installed and available on your PATH.',
     cookies403Tip: 'Getting <strong>HTTP 403</strong> or "Sign in to confirm you\'re not a bot"? YouTube blocks downloads without cookies. Enable <strong>Cookies from Browser</strong> or cookie.txt in the Network section.',
+    emptyState: 'Enter a valid YouTube URL above to see the command here.',
 
     filenameTemplateLabel: 'Filename Template',
     templatePresetsLabel: 'Filename template presets',
@@ -2045,13 +2070,37 @@ function canCopyCommand() {
 // ============================================================
 function updateUI() {
   const options = { ...state };
-  const parts = buildCommand({ url: state.url, options });
-  const rawCommand = formatCommand(renderCommandParts(parts, state.os), state.os, state.multiline);
-  const highlighted = syntaxHighlight(parts, state.os, state.multiline);
+  const urlResult = validateUrl(state.url || '');
   const t = I18N[currentLang()];
+  const commandCode = document.getElementById('command-code');
 
-  // Update command display
-  document.getElementById('command-code').innerHTML = highlighted;
+  if (!urlResult.valid) {
+    // Empty state: no fake "yt-dlp ... URL" placeholder — show a friendly
+    // hint instead, and keep the clipboard buffer empty.
+    commandCode.innerHTML = `<span class="cmd-empty">${escapeHtml(t.emptyState)}</span>`;
+    document.getElementById('command-output').dataset.raw = '';
+
+    // The safety warning only makes sense for a real command.
+    const warnEl = document.getElementById('cmd-safety-warning');
+    if (warnEl) warnEl.hidden = true;
+  } else {
+    const parts = buildCommand({ url: state.url, options });
+    const rawCommand = formatCommand(renderCommandParts(parts, state.os), state.os, state.multiline);
+    commandCode.innerHTML = syntaxHighlight(parts, state.os, state.multiline);
+
+    // Store raw command for clipboard
+    document.getElementById('command-output').dataset.raw = rawCommand;
+
+    // Inline safety warning for windows-cmd output whose user-controlled
+    // values contain characters cmd.exe would parse as syntax (% " newline).
+    // The command stays visible for inspection but must not be pasted.
+    const cmdUnsafe = state.os === 'windows-cmd' && !isSafeWindowsCmdInput(state);
+    const warnEl = document.getElementById('cmd-safety-warning');
+    if (warnEl) {
+      warnEl.hidden = !cmdUnsafe;
+      if (cmdUnsafe) warnEl.textContent = t.toast.unsafeWindowsCmd;
+    }
+  }
 
   // OS badge
   const osBadge = document.getElementById('os-badge');
@@ -2066,16 +2115,6 @@ function updateUI() {
   // command cannot be copied instead of being a silently dead control.
   const copyBtn = document.getElementById('copy-btn');
   copyBtn.setAttribute('aria-label', t.toast.copyButtonLabel);
-
-  // Inline safety warning for windows-cmd output whose user-controlled
-  // values contain characters cmd.exe would parse as syntax (% " newline).
-  // The command stays visible for inspection but must not be pasted.
-  const cmdUnsafe = state.os === 'windows-cmd' && !isSafeWindowsCmdInput(state);
-  const warnEl = document.getElementById('cmd-safety-warning');
-  if (warnEl) {
-    warnEl.hidden = !cmdUnsafe;
-    if (cmdUnsafe) warnEl.textContent = t.toast.unsafeWindowsCmd;
-  }
 
   // Free-text rate limit: show an inline error for values yt-dlp would
   // reject; the builder already omits --limit-rate for them.
@@ -2167,9 +2206,6 @@ function updateUI() {
 
   // Save to localStorage
   saveOptions();
-
-  // Store raw command for clipboard
-  document.getElementById('command-output').dataset.raw = rawCommand;
 }
 
 function updateRadioStyles(groupId) {
