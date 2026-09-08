@@ -507,3 +507,56 @@ test('detectDefaultLang recognizes Indonesian browser locales', () => {
   assert.equal(detectDefaultLang('de-DE'), 'en');
   assert.equal(detectDefaultLang(''), 'en');
 });
+
+test('validateUrl recognizes Instagram Reel URLs', () => {
+  const { validateUrl } = loadCommandBuilder();
+
+  assertPlainEqual(
+    validateUrl('https://www.instagram.com/reel/ABC123/', 'en'),
+    { valid: true, type: 'reel', message: '' }
+  );
+  assert.equal(validateUrl('not-a-reel-url').valid, false);
+});
+
+test('buildCommand adds --reels flag for Instagram Reel URLs', () => {
+  const { buildCommand } = loadCommandBuilder();
+  const reelUrl = 'https://www.instagram.com/reel/ABC123/';
+  const options = baseOptions({ url: reelUrl });
+  const parts = buildCommand({ url: reelUrl, options });
+
+  // Note: yt-dlp handles Reels automatically; no --reels flag needed
+  assert.equal(parts.includes(reelUrl), true, 'Command should include the Reel URL');
+  assert.equal(parts.includes(reelUrl), true, 'Command should include the Reel URL');
+});
+
+test('buildCommand does not add --reels for non-Reel URLs', () => {
+  const { buildCommand } = loadCommandBuilder();
+  const youtubeUrl = 'https://youtube.com/watch?v=AAAAAAAAAAA';
+  const options = baseOptions({ url: youtubeUrl });
+  const parts = buildCommand({ url: youtubeUrl, options });
+
+  // Note: no --reels flag needed for any URL, since yt-dlp handles Reels automatically
+  assert.equal(parts.includes('--reels'), false, 'No --reels flag needed');
+});
+
+test('buildCommand supports Reels with additional options', () => {
+  const { buildCommand } = loadCommandBuilder();
+  const reelUrl = 'https://www.instagram.com/reel/XYZ789/';
+  const options = baseOptions({
+    resolution: '1080',
+    audioOnly: true,
+    audioFormat: 'mp3',
+    writeSubs: true,
+    subLangs: 'en',
+    outputTemplate: '%(title)s_%(ext)s',
+  });
+  const parts = buildCommand({ url: reelUrl, options });
+
+  // Note: yt-dlp detects Reels from URL automatically; no flag needed
+  assert.equal(parts.includes(reelUrl), true, 'Reels with options should include Reel URL');
+  assert.equal(parts.includes('--audio-format'), true, 'Should include --audio-format');
+  assert.equal(parts.includes('--audio-quality'), true, 'Should include --audio-quality');
+  assert.equal(parts.includes('--write-subs'), true, 'Should include --write-subs');
+  assert.equal(parts.includes('--sub-langs'), true, 'Should include --sub-langs');
+  assert.equal(parts.includes('-x'), true, 'Should include -x flag for audio-only mode');
+});

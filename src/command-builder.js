@@ -261,6 +261,7 @@ const URL_PATTERNS = {
   shortUrl: /^https?:\/\/(www\.)?youtu\.be\/[\w-]{11}(?:[?&][^\s]*)?$/,
   channel:  /^https?:\/\/(www\.)?youtube\.com\/@[\w-]+(?:[?&][^\s]*)?$/,
   music:    /^https?:\/\/music\.youtube\.com\/watch\?v=[\w-]{11}(?:[?&][^\s]*)?$/,
+  reel:     /^https?:\/\/(www\.)?instagram\.com\/reel\/[\w-]+\/?(?:[?&][^\s]*)?$/,
 };
 
 function validateUrl(url, lang = 'id') {
@@ -326,6 +327,12 @@ function buildCommand(state) {
   // current directory by default.
   const exeName = isWindows && !options.useGlobalExe ? '.\\yt-dlp.exe' : 'yt-dlp';
   const parts = [exeName];
+
+  // Check if this is an Instagram Reel URL (yt-dlp handles Reels automatically)
+  const urlValidation = validateUrl(url);
+  const isReel = urlValidation.valid && urlValidation.type === 'reel';
+  // Note: yt-dlp detects Reels automatically from the URL; no --reels flag needed
+  // The URL itself tells yt-dlp it's a Reel (instagram.com/reel/...)
 
   if (options.audioOnly) {
     parts.push('-x');
