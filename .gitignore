@@ -85,3 +85,4 @@ temp/
 *.tmp
 *.temp
 .docs/
+.scratch/*
