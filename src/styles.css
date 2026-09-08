@@ -240,7 +240,7 @@ select:focus-visible,
 /* ===== PRESETS ===== */
 #presets-section {
   display: flex; gap: 10px;
-  overflow-x: auto; padding-bottom: 4px;
+  overflow-x: auto; padding: 6px 4px 10px 4px;
   scrollbar-width: none;
 }
 #presets-section::-webkit-scrollbar { display: none; }
@@ -252,8 +252,8 @@ select:focus-visible,
   transition: var(--transition-normal); min-width: 160px; flex-shrink: 0;
   font-family: var(--font-sans);
 }
-.preset-btn:hover { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-shadow); transform: translateY(-1px); }
-.preset-btn.active { border-color: var(--color-primary); background: rgba(98, 70, 234, 0.07); box-shadow: 0 0 0 3px var(--color-primary-shadow); }
+.preset-btn:hover { border-color: var(--color-primary); box-shadow: var(--shadow-md), 0 0 0 2px rgba(98, 70, 234, 0.15); transform: translateY(-2px); }
+.preset-btn.active { border-color: var(--color-primary); background: rgba(98, 70, 234, 0.07); box-shadow: var(--shadow-md), 0 0 0 2px rgba(98, 70, 234, 0.15); }
 .preset-btn:active { transform: scale(0.97) translateY(0); }
 .preset-icon { font-size: 20px; line-height: 1; }
 .preset-label { font-size: 14px; font-weight: 600; color: var(--text-primary); }
