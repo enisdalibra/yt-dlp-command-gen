@@ -36,6 +36,11 @@ const PRESETS = {
     downloadPlaylist: true, addMetadata: true,
     outputTemplate: '%(playlist_index)s - %(title)s.%(ext)s',
   },
+  'instagram-reels': {
+    videoFormat: 'best', resolution: '1080',
+    audioOnly: false, audioQuality: 0,
+    embedThumbnail: true, addMetadata: true,
+  },
 };
 
 // Every command-affecting option a preset owns. Applying a preset resets
@@ -99,7 +104,7 @@ const STORAGE_ENUMS = {
   mergeFormat: [null, 'mp4'],
   cookiesBrowser: ['', 'brave', 'chrome', 'chromium', 'edge', 'firefox', 'opera', 'safari', 'vivaldi'],
   os: ['unix', 'windows-cmd', 'powershell'],
-  activePreset: [null, 'best-video', 'hd-mp4', 'audio-mp3', 'youtube-music-audio', 'playlist'],
+  activePreset: [null, 'best-video', 'hd-mp4', 'audio-mp3', 'youtube-music-audio', 'playlist', 'instagram-reels'],
 };
 
 const STORAGE_BOOLEAN_KEYS = [

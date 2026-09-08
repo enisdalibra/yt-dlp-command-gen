@@ -560,3 +560,14 @@ test('buildCommand supports Reels with additional options', () => {
   assert.equal(parts.includes('--sub-langs'), true, 'Should include --sub-langs');
   assert.equal(parts.includes('-x'), true, 'Should include -x flag for audio-only mode');
 });
+
+test('instagram-reels preset applies optimized defaults', () => {
+  const { PRESETS, PRESET_RESET_KEYS } = loadCommandBuilder();
+  assert.equal(PRESETS['instagram-reels'] !== undefined, true);
+  assert.equal(PRESETS['instagram-reels'].videoFormat, 'best');
+  assert.equal(PRESETS['instagram-reels'].resolution, '1080');
+  assert.equal(PRESETS['instagram-reels'].audioOnly, false);
+  assert.equal(PRESETS['instagram-reels'].audioQuality, 0);
+  assert.equal(PRESET_RESET_KEYS.includes('videoFormat'), true);
+  assert.equal(PRESET_RESET_KEYS.includes('resolution'), true);
+});
