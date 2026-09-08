@@ -39,7 +39,7 @@ const PRESETS = {
   'instagram-reels': {
     videoFormat: 'best', resolution: '1080',
     audioOnly: false, audioQuality: 0,
-    embedThumbnail: false, addMetadata: false,
+    embedThumbnail: true, addMetadata: true,
   },
 };
 
