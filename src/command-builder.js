@@ -40,6 +40,7 @@ const PRESETS = {
     videoFormat: 'best', resolution: '1080',
     audioOnly: false, audioQuality: 0,
     embedThumbnail: true, addMetadata: true,
+    restrictFilenames: true,
   },
 };
 
@@ -90,6 +91,7 @@ const STORAGE_OPTION_KEYS = [
   'cookiesBrowser',
   'cookiesFileEnabled',
   'cookiesFilePath',
+  'restrictFilenames',
   'useGlobalExe',
   'multiline',
   'os',
@@ -118,6 +120,7 @@ const STORAGE_BOOLEAN_KEYS = [
   'sponsorBlock',
   'downloadPlaylist',
   'cookiesFileEnabled',
+  'restrictFilenames',
   'useGlobalExe',
   'multiline',
 ];
@@ -388,6 +391,9 @@ function buildCommand(state) {
   const rate = String(options.rateLimit || '').trim();
   if (rate && validateRateLimit(rate).valid) {
     parts.push('--limit-rate', rate);
+  }
+  if (options.restrictFilenames) {
+    parts.push('--restrict-filenames');
   }
   // cookies dari browser dan cookies dari file harus saling eksklusif
   if (options.cookiesBrowser && !options.cookiesFileEnabled) {
