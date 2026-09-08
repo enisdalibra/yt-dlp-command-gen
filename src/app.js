@@ -65,6 +65,7 @@ const I18N = {
       'audio-mp3': { label: 'Audio MP3', desc: 'Ekstrak audio, kualitas terbaik' },
       'youtube-music-audio': { label: 'Audio YouTube Music', desc: 'Untuk music.youtube.com' },
       'playlist': { label: 'Playlist', desc: 'Unduh seluruh playlist' },
+      'instagram-reels': { label: 'Instagram Reels', desc: 'Download Reels, 1080p' },
     },
 
     formatVideoSectionLabel: 'Format Video',
@@ -197,6 +198,7 @@ const I18N = {
       'audio-mp3': { label: 'Audio MP3', desc: 'Extract audio, best quality' },
       'youtube-music-audio': { label: 'YouTube Music Audio', desc: 'Audio for music.youtube.com' },
       'playlist': { label: 'Playlist', desc: 'Download entire playlist' },
+      'instagram-reels': { label: 'Instagram Reels', desc: 'Reels download, 1080p' },
     },
 
     formatVideoSectionLabel: 'Video Format',
